@@ -73,7 +73,6 @@ static Imlib_Image scrotGrabAutoselect(void);
 static Imlib_Image scrotGrabShotMulti(void);
 static Imlib_Image scrotGrabStackWindows(void);
 static Imlib_Image scrotGrabShot(void);
-static void scrotCheckIfOverwriteFile(char **);
 static char *imPrintf(char *, struct tm *, char *, char *, Imlib_Image);
 static Window scrotGetClientWindow(Display *, Window);
 static Window scrotFindWindowByProperty(Display *, const Window,
@@ -140,8 +139,6 @@ int main(int argc, char *argv[])
         imlib_image_set_format("png");
 
     filenameIM = imPrintf(opt.outputFile, tm, NULL, NULL, image);
-    scrotCheckIfOverwriteFile(&filenameIM);
-
     imlib_save_image_with_error_return(filenameIM, &imErr);
     if (imErr)
         err(EXIT_FAILURE, "Saving to file %s failed", filenameIM);
@@ -182,7 +179,6 @@ int main(int argc, char *argv[])
                 imlib_image_set_format("png");
 
             filenameThumb = imPrintf(opt.thumbFile, tm, NULL, NULL, thumbnail);
-            scrotCheckIfOverwriteFile(&filenameThumb);
             imlib_save_image_with_error_return(filenameThumb, &imErr);
             imlib_free_image_and_decache();
 
@@ -411,55 +407,6 @@ void scrotGrabMousePointer(const Imlib_Image image, const int xOffset,
         height);
     imlib_context_set_image(imcursor);
     imlib_free_image();
-}
-
-static void scrotCheckIfOverwriteFile(char **filename)
-{
-    if (opt.overwrite)
-        return;
-
-    if (access(*filename, F_OK) == -1)
-        return;
-
-    const size_t maxCounter = 999;
-    size_t counter = 0;
-    char *ext = NULL;
-    size_t extLength = 0;
-    const size_t slen = strlen(*filename);
-    size_t nalloc = slen + 4 + 1; // _000 + NUL byte
-    char fmt[5];
-    char *newName = NULL;
-
-    extLength = scrotHaveFileExtension(*filename, &ext);
-
-    if (ext)
-        nalloc += extLength; // .ext
-
-    newName = calloc(nalloc, sizeof(*newName));
-    memcpy(newName, *filename, slen);
-
-    do {
-        char *ptr = newName + slen;
-
-        snprintf(fmt, sizeof(fmt), "_%03zu", counter++);
-
-        if(ext) {
-            ptr -= extLength;
-            memcpy(ptr, fmt, sizeof(fmt));
-            memcpy(ptr + sizeof(fmt) - 1, ext, extLength);
-        } else
-            memcpy(ptr, fmt, sizeof(fmt));
-    } while ((counter < maxCounter) && !access(newName, F_OK));
-
-    assert(newName[nalloc - 1] == '\0');
-
-    free(*filename);
-    *filename = newName;
-
-    if (counter == maxCounter) {
-        errx(EXIT_FAILURE, "scrot can no longer generate new file names.\n"
-            "The last attempt is %s", newName);
-    }
 }
 
 static int scrotMatchWindowClassName(Window target)

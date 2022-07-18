@@ -56,7 +56,6 @@ struct ScrotOptions {
     int pointer;
     int ignoreKeyboard;
     int freeze;
-    int overwrite;
     int lineStyle;
     int lineWidth;
     int lineOpacity;

@@ -355,7 +355,6 @@ void optionsParse(int argc, char *argv[])
         { "pointer", no_argument, 0, 'p' },
         { "ignorekeyboard", no_argument, 0, 'i' },
         { "freeze", no_argument, 0, 'f' },
-        { "overwrite", no_argument, 0, 'o' },
         /* toggles */
         { "stack", optional_argument, 0, 'k' },
         { "select", optional_argument, 0, 's' },
@@ -409,9 +408,6 @@ void optionsParse(int argc, char *argv[])
         case 'f':
             opt.freeze = 1;
             break;
-        case 'o':
-            opt.overwrite = 1;
-            break;
         case 'a':
             optionsParseAutoselect(optarg);
             break;
@@ -453,7 +449,6 @@ void optionsParse(int argc, char *argv[])
             if (redirectChar) {
                 free(opt.outputFile);
                 opt.outputFile = getPathOfStdout();
-                opt.overwrite = 1;
                 opt.thumb = 0;
             }
         } else
