@@ -61,7 +61,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "imlib.h"
 #include "options.h"
 #include "scrot.h"
-#include "slist.h"
 
 static void uninitXAndImlib(void);
 static Imlib_Image scrotGrabFocused(void);
