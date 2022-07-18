@@ -69,7 +69,6 @@ struct ScrotOptions {
     char *lineMode;
     char *outputFile;
     char *thumbFile;
-    char *exec;
     char *display;
     char *note;
     char *windowClassName;

@@ -75,7 +75,6 @@ static Imlib_Image scrotGrabShotMulti(void);
 static Imlib_Image scrotGrabStackWindows(void);
 static Imlib_Image scrotGrabShot(void);
 static void scrotCheckIfOverwriteFile(char **);
-static void scrotExecApp(Imlib_Image, struct tm *, char *, char *);
 static char *imPrintf(char *, struct tm *, char *, char *, Imlib_Image);
 static Window scrotGetClientWindow(Display *, Window);
 static Window scrotFindWindowByProperty(Display *, const Window,
@@ -195,8 +194,6 @@ int main(int argc, char *argv[])
                 err(EXIT_FAILURE, "Saving thumbnail %s failed", filenameThumb);
         }
     }
-    if (opt.exec)
-        scrotExecApp(image, tm, filenameIM, filenameThumb);
 
     imlib_context_set_image(image);
     imlib_free_image_and_decache();
@@ -563,26 +560,6 @@ static Imlib_Image scrotGrabShot(void)
         scrotGrabMousePointer(im, 0, 0);
 
     return im;
-}
-
-static void scrotExecApp(Imlib_Image image, struct tm *tm, char *filenameIM,
-    char *filenameThumb)
-{
-    char *execStr;
-    int ret;
-
-    execStr = imPrintf(opt.exec, tm, filenameIM, filenameThumb, image);
-
-    errno = 0;
-
-    ret = system(execStr);
-
-    if (ret == -1)
-        warn("The child process could not be created");
-    else if (WEXITSTATUS(ret) == 127)
-        warnx("scrot could not execute the command: %s", execStr);
-
-    exit(0);
 }
 
 static Bool scrotXEventVisibility(Display *dpy, XEvent *ev, XPointer arg)

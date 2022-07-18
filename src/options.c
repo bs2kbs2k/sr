@@ -364,7 +364,6 @@ void optionsParse(int argc, char *argv[])
         { "thumb", required_argument, 0, 't' },
         { "delay", required_argument, 0, 'd' },
         { "quality", required_argument, 0, 'q' },
-        { "exec", required_argument, 0, 'e' },
         { "autoselect", required_argument, 0, 'a' },
         { "display", required_argument, 0, 'D' },
         { "note", required_argument, 0, 'n' },
@@ -392,9 +391,6 @@ void optionsParse(int argc, char *argv[])
             break;
         case 'd':
             opt.delay = nonNegativeNumber(optionsParseRequiredNumber(optarg));
-            break;
-        case 'e':
-            opt.exec = estrdup(optarg);
             break;
         case 'm':
             opt.multidisp = 1;
