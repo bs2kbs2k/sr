@@ -79,49 +79,11 @@ Capture the mouse pointer.
 \fB-s\fP, \fB--select\fP OPT
 Interactively select a window or rectangle with the
 mouse, use the arrow keys to resize. See the \fB-l\fP and
-\fB-f\fP options. OPT it's optional; see SELECTION MODE
+\fB-f\fP options.
 .TP
 .B
 \fB-u\fP, \fB--focused\fP
 Use the currently focused window.
-.SH SELECTION MODE
-When using \fB-s\fP, optionally you can indicate the action to perform with the selection area.
-Some actions allow optional parameters too.
-.PP
-.nf
-.fam C
-    capture             Capture the selection area, this action is by default and
-                        does not need to be specified.
-
-    hole                Highlight the selected area overshadowing the rest of the capture.
-
-    hide,IMAGE          Hide the selection area by drawing an area of color (or image) over it.
-                        Optionally indicate name of the image to use as cover.
-                        Image has priority over color.
-
-    blur,AMOUNT         Blurs the selection area.
-                        Optionally you can specify the amount of blur.
-                        Amount,range: 1..30,  default: 18
-
-.fam T
-.fi
-In modes 'hole' and 'hide' the color of the area is indicated by 'color' property of the
-line style and the opacity of the color (or image) is indicated by property 'opacity', SELECTION \fISTYLE\fP
-.PP
-If the 'hide' mode uses an image that does not have an alpha channel, the opacity parameter
-will be ignored and it will be drawn fully opaque.
-.PP
-Examples:
-.PP
-.nf
-.fam C
-    $ scrot --select=hide
-    $ scrot -shole --line color="Dark Salmon",opacity=200
-    $ scrot -sblur,10
-    $ scrot -shide,stamp.png --line opacity=120
-
-.fam T
-.fi
 .SH SELECTION STYLE
 When using \fB-s\fP, you can indicate the style of the line with \fB-l\fP.
 .PP

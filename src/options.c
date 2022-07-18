@@ -117,11 +117,6 @@ range_error:
     err(EXIT_FAILURE, "error strtol");
 }
 
-static int nonNegativeNumber(int number)
-{
-    return (number < 0) ? 0 : number;
-}
-
 int optionsParseRequireRange(int n, int lo, int hi)
 {
     return (n < lo ? lo : n > hi ? hi : n);
@@ -153,65 +148,6 @@ static void optionsParseStack(const char *optarg)
     else {
         errx(EXIT_FAILURE, "option --stack: Unknown value for suboption '%s'",
              value);
-    }
-}
-
-static void optionsParseSelection(const char *optarg)
-{
-    // the suboption it's optional
-    if (!optarg) {
-        opt.selection.mode = SELECTION_MODE_CAPTURE;
-        return;
-    }
-
-    const char *value = strchr(optarg, '=');
-
-    if (value)
-        ++value;
-    else
-        value = optarg;
-
-    if (!strncmp(value, SELECTION_MODE_S_CAPTURE, SELECTION_MODE_L_CAPTURE)) {
-        opt.selection.mode = SELECTION_MODE_CAPTURE;
-        return; /* it has no parameter */
-    }
-    else if (!strncmp(value, SELECTION_MODE_S_HIDE, SELECTION_MODE_L_HIDE)) {
-        opt.selection.mode = SELECTION_MODE_HIDE;
-        value += SELECTION_MODE_L_HIDE;
-    }
-    else if (!strncmp(value, SELECTION_MODE_S_HOLE, SELECTION_MODE_L_HOLE)) {
-        opt.selection.mode = SELECTION_MODE_HOLE;
-    }
-    else if (!strncmp(value, SELECTION_MODE_S_BLUR, SELECTION_MODE_L_BLUR)) {
-        opt.selection.mode = SELECTION_MODE_BLUR;
-        opt.selection.paramNum = SELECTION_MODE_BLUR_DEFAULT;
-        value += SELECTION_MODE_L_BLUR;
-    }
-    else {
-        errx(EXIT_FAILURE, "option --select: Unknown value for suboption '%s'",
-             value);
-    }
-
-    if (opt.selection.mode & SELECTION_MODE_NOT_NEED_PARAM)
-        return;
-
-    if (*value != SELECTION_MODE_SEPARATOR)
-        return;
-
-    if (*(++value) == '\0')
-        errx(EXIT_FAILURE, "option --select: Invalid parameter.");
-
-    if (opt.selection.mode == SELECTION_MODE_BLUR) {
-        int const num = nonNegativeNumber(optionsParseRequiredNumber(value));
-
-        opt.selection.paramNum = optionsParseRequireRange(num,
-            SELECTION_MODE_BLUR_MIN, SELECTION_MODE_BLUR_MAX);
-
-    } else { // SELECTION_MODE_HIDE
-
-        checkMaxInputFileName(value);
-
-        opt.selection.paramStr = estrdup(value);
     }
 }
 
@@ -345,7 +281,7 @@ void optionsParse(int argc, char *argv[])
             opt.border = 1;
             break;
         case 's':
-            optionsParseSelection(optarg);
+			opt.selection.mode = SELECTION_MODE_CAPTURE;
             break;
         case 'u':
             opt.focused = 1;
