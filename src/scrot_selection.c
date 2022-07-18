@@ -380,11 +380,6 @@ bool scrotSelectionGetUserSel(struct SelectionRect *selectionRect)
             ry += rh;
             rh = 0 - rh;
         }
-
-        // Not record pointer if there is a selection area because it is busy on that,
-        // unless the delay option is used.
-        if (opt.delay == 0)
-            opt.pointer = 0;
     } else {
         /* else it's a window click */
         if (!scrotGetGeometry(target, &rx, &ry, &rw, &rh))
@@ -469,8 +464,6 @@ Imlib_Image scrotSelectionSelectMode(void)
     if (opt.selection.mode & SELECTION_MODE_NOT_CAPTURE)
         if (!scrotSelectionGetUserSel(&rect1))
             return NULL;
-
-    scrotDoDelay();
 
     Imlib_Image capture = imlib_create_image_from_drawable(0, rect0.x, rect0.y,
         rect0.w, rect0.h, 1);

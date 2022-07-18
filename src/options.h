@@ -46,8 +46,6 @@ enum Direction {
 };
 
 struct ScrotOptions {
-    int delay;
-    int countdown;
     int focused;
     int quality;
     int border;

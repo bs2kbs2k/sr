@@ -116,7 +116,6 @@ int main(int argc, char *argv[])
     else if (opt.autoselect)
         image = scrotGrabAutoselect();
     else {
-        scrotDoDelay();
         if (opt.multidisp)
             image = scrotGrabShotMulti();
         else if (opt.stack)
@@ -229,7 +228,6 @@ static Imlib_Image scrotGrabFocused(void)
     Window target = None;
     int ignored;
 
-    scrotDoDelay();
     XGetInputFocus(disp, &target, &ignored);
     if (!scrotGetGeometry(target, &rx, &ry, &rw, &rh))
         return NULL;
@@ -247,33 +245,11 @@ static Imlib_Image scrotGrabAutoselect(void)
     int rx = opt.autoselectX, ry = opt.autoselectY, rw = opt.autoselectW,
         rh = opt.autoselectH;
 
-    scrotDoDelay();
     scrotNiceClip(&rx, &ry, &rw, &rh);
     im = imlib_create_image_from_drawable(0, rx, ry, rw, rh, 1);
     if (opt.pointer)
         scrotGrabMousePointer(im, rx, ry);
     return im;
-}
-
-void scrotDoDelay(void)
-{
-    if (opt.delay) {
-        if (opt.countdown) {
-            int i;
-
-            printf("Taking shot in %d.. ", opt.delay);
-            fflush(stdout);
-            sleep(1);
-            for (i = opt.delay - 1; i > 0; i--) {
-                printf("%d.. ", i);
-                fflush(stdout);
-                sleep(1);
-            }
-            printf("0.\n");
-            fflush(stdout);
-        } else
-            sleep(opt.delay);
-    }
 }
 
 /* Clip rectangle nicely */

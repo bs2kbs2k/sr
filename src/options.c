@@ -348,7 +348,6 @@ void optionsParse(int argc, char *argv[])
         /* actions */
         { "help", no_argument, 0, 'h' },
         { "version", no_argument, 0, 'v' },
-        { "count", no_argument, 0, 'c' },
         { "focused", no_argument, 0, 'u' },
         { "focussed", no_argument, 0, 'u' }, /* macquarie dictionary has both spellings */
         { "border", no_argument, 0, 'b' },
@@ -361,7 +360,6 @@ void optionsParse(int argc, char *argv[])
         { "stack", optional_argument, 0, 'k' },
         { "select", optional_argument, 0, 's' },
         { "thumb", required_argument, 0, 't' },
-        { "delay", required_argument, 0, 'd' },
         { "quality", required_argument, 0, 'q' },
         { "autoselect", required_argument, 0, 'a' },
         { "display", required_argument, 0, 'D' },
@@ -387,9 +385,6 @@ void optionsParse(int argc, char *argv[])
         case 'b':
             opt.border = 1;
             break;
-        case 'd':
-            opt.delay = nonNegativeNumber(optionsParseRequiredNumber(optarg));
-            break;
         case 'm':
             opt.multidisp = 1;
             break;
@@ -401,9 +396,6 @@ void optionsParse(int argc, char *argv[])
             break;
         case 'u':
             opt.focused = 1;
-            break;
-        case 'c':
-            opt.countdown = 1;
             break;
         case 't':
             optionsParseThumbnail(optarg);
