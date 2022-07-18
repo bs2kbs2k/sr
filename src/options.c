@@ -357,7 +357,6 @@ void optionsParse(int argc, char *argv[])
         /* toggles */
         { "stack", optional_argument, 0, 'k' },
         { "select", optional_argument, 0, 's' },
-        { "thumb", required_argument, 0, 't' },
         { "autoselect", required_argument, 0, 'a' },
         { "display", required_argument, 0, 'D' },
         { "note", required_argument, 0, 'n' },
@@ -390,9 +389,6 @@ void optionsParse(int argc, char *argv[])
             break;
         case 'u':
             opt.focused = 1;
-            break;
-        case 't':
-            optionsParseThumbnail(optarg);
             break;
         case 'p':
             opt.pointer = 1;
@@ -444,7 +440,6 @@ void optionsParse(int argc, char *argv[])
             if (redirectChar) {
                 free(opt.outputFile);
                 opt.outputFile = getPathOfStdout();
-                opt.thumb = 0;
             }
         } else
             warnx("unrecognised option %s", argv[optind++]);
@@ -468,30 +463,6 @@ static void showVersion(void)
 {
     printf(PACKAGE " version " VERSION "\n");
     exit(0);
-}
-
-char *optionsNameThumbnail(const char *name)
-{
-    const char *const thumbSuffix = "-thumb";
-    const size_t thumbSuffixLength = 7;
-    const size_t newNameLength = strlen(name) + thumbSuffixLength;
-    char *newName = calloc(1, newNameLength);
-
-    if (!newName)
-        err(EXIT_FAILURE, "Unable to allocate thumbnail");
-
-    const char *const extension = strrchr(name, '.');
-
-    if (extension) {
-        /* We add one so length includes '\0'*/
-        const ptrdiff_t nameLength = (extension - name) + 1;
-        strlcpy(newName, name, nameLength);
-        strlcat(newName, thumbSuffix, newNameLength);
-        strlcat(newName, extension, newNameLength);
-    } else
-        snprintf(newName, newNameLength, "%s%s", name, thumbSuffix);
-
-    return newName;
 }
 
 void optionsParseAutoselect(char *optarg)
@@ -522,35 +493,6 @@ void optionsParseDisplay(char *optarg)
     opt.display = strndup(optarg, MAX_DISPLAY_NAME);
     if (!opt.display)
         err(EXIT_FAILURE, "Unable to allocate display");
-}
-
-void optionsParseThumbnail(char *optarg)
-{
-    char *token;
-
-    if (strchr(optarg, 'x')) { /* We want to specify the geometry */
-        token = strtok(optarg, "x");
-        opt.thumbWidth = optionsParseRequiredNumber(token);
-        token = strtok(NULL, "x");
-        if (token) {
-            opt.thumbWidth = optionsParseRequiredNumber(optarg);
-            opt.thumbHeight = optionsParseRequiredNumber(token);
-
-            if (opt.thumbWidth < 0)
-                opt.thumbWidth = 1;
-            if (opt.thumbHeight < 0)
-                opt.thumbHeight = 1;
-
-            if (!opt.thumbWidth && !opt.thumbHeight)
-                opt.thumb = 0;
-            else
-                opt.thumb = 1;
-        }
-    } else {
-        opt.thumb = optionsParseRequireRange(
-                        optionsParseRequiredNumber(optarg), 1, 100);
-    }
-
 }
 
 void optionsParseFileName(const char *optarg)

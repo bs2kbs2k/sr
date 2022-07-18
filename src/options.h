@@ -49,9 +49,6 @@ struct ScrotOptions {
     int focused;
     int border;
     int multidisp;
-    int thumb;
-    int thumbWidth;
-    int thumbHeight;
     int pointer;
     int ignoreKeyboard;
     int freeze;
@@ -63,7 +60,6 @@ struct ScrotOptions {
     char *lineColor;
     char *lineMode;
     char *outputFile;
-    char *thumbFile;
     char *display;
     char *note;
     char *windowClassName;
@@ -78,9 +74,7 @@ struct ScrotOptions {
 extern struct ScrotOptions opt;
 
 void optionsParse(int, char **);
-char *optionsNameThumbnail(const char *);
 void optionsParseFileName(const char *);
-void optionsParseThumbnail(char *);
 void optionsParseAutoselect(char *);
 void optionsParseDisplay(char *);
 void optionsParseNote(char *);

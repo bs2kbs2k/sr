@@ -73,7 +73,7 @@ static Imlib_Image scrotGrabAutoselect(void);
 static Imlib_Image scrotGrabShotMulti(void);
 static Imlib_Image scrotGrabStackWindows(void);
 static Imlib_Image scrotGrabShot(void);
-static char *imPrintf(char *, struct tm *, char *, char *, Imlib_Image);
+static char *imPrintf(char *, struct tm *, char *, Imlib_Image);
 static Window scrotGetClientWindow(Display *, Window);
 static Window scrotFindWindowByProperty(Display *, const Window,
                                               const Atom);
@@ -83,10 +83,8 @@ static int findWindowManagerFrame(Window *const, int *const);
 int main(int argc, char *argv[])
 {
     Imlib_Image image;
-    Imlib_Image thumbnail;
     Imlib_Load_Error imErr;
     char *filenameIM = NULL;
-    char *filenameThumb = NULL;
 
     char *haveExtension = NULL;
 
@@ -101,10 +99,7 @@ int main(int argc, char *argv[])
 
     if (!opt.outputFile) {
         opt.outputFile = estrdup("%Y-%m-%d-%H%M%S_$wx$h_scrot.png");
-        opt.thumbFile = estrdup("%Y-%m-%d-%H%M%S_$wx$h_scrot-thumb.png");
     } else {
-        if (opt.thumb)
-            opt.thumbFile = optionsNameThumbnail(opt.outputFile);
         scrotHaveFileExtension(opt.outputFile, &haveExtension);
     }
 
@@ -138,54 +133,10 @@ int main(int argc, char *argv[])
     if (!haveExtension)
         imlib_image_set_format("png");
 
-    filenameIM = imPrintf(opt.outputFile, tm, NULL, NULL, image);
+    filenameIM = imPrintf(opt.outputFile, tm, NULL, image);
     imlib_save_image_with_error_return(filenameIM, &imErr);
     if (imErr)
         err(EXIT_FAILURE, "Saving to file %s failed", filenameIM);
-
-    if (opt.thumb) {
-        int cwidth, cheight;
-        int twidth, theight;
-
-        cwidth = imlib_image_get_width();
-        cheight = imlib_image_get_height();
-
-        /* Geometry based thumb size */
-        if (opt.thumbWidth || opt.thumbHeight) {
-            if (!opt.thumbWidth) {
-                twidth = cwidth * opt.thumbHeight / cheight;
-                theight = opt.thumbHeight;
-            } else if (!opt.thumbHeight) {
-                twidth = opt.thumbWidth;
-                theight = cheight * opt.thumbWidth / cwidth;
-            } else {
-                twidth = opt.thumbWidth;
-                theight = opt.thumbHeight;
-            }
-        } else {
-            twidth = cwidth * opt.thumb / 100;
-            theight = cheight * opt.thumb / 100;
-        }
-
-        imlib_context_set_anti_alias(1);
-        thumbnail = imlib_create_cropped_scaled_image(0, 0, cwidth, cheight,
-            twidth, theight);
-        if (!thumbnail)
-            err(EXIT_FAILURE, "unable to create thumbnail");
-        else {
-            scrotHaveFileExtension(opt.thumbFile, &haveExtension);
-            imlib_context_set_image(thumbnail);
-            if (!haveExtension)
-                imlib_image_set_format("png");
-
-            filenameThumb = imPrintf(opt.thumbFile, tm, NULL, NULL, thumbnail);
-            imlib_save_image_with_error_return(filenameThumb, &imErr);
-            imlib_free_image_and_decache();
-
-            if (imErr)
-                err(EXIT_FAILURE, "Saving thumbnail %s failed", filenameThumb);
-        }
-    }
 
     imlib_context_set_image(image);
     imlib_free_image_and_decache();
@@ -480,7 +431,7 @@ static Bool scrotXEventVisibility(Display *dpy, XEvent *ev, XPointer arg)
 }
 
 static char *imPrintf(char *str, struct tm *tm, char *filenameIM,
-    char *filenameThumb, Imlib_Image im)
+    Imlib_Image im)
 {
     char *c;
     char buf[20];
@@ -506,10 +457,6 @@ static char *imPrintf(char *str, struct tm *tm, char *filenameIM,
             case 'f':
                 if (filenameIM)
                     strlcat(ret, filenameIM, sizeof(ret));
-                break;
-            case 'm': /* t was already taken, so m as in mini */
-                if (filenameThumb)
-                    strlcat(ret, filenameThumb, sizeof(ret));
                 break;
             case 'n':
                 if (filenameIM) {
