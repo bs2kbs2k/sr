@@ -393,9 +393,6 @@ bool scrotSelectionGetUserSel(struct SelectionRect *selectionRect)
     }
     scrotNiceClip(&rx, &ry, &rw, &rh);
 
-    if (!opt.silent)
-        XBell(disp, 0);
-
     selectionRect->x = rx;
     selectionRect->y = ry;
     selectionRect->w = rw;

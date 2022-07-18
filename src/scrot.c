@@ -541,9 +541,6 @@ static Imlib_Image scrotGrabShot(void)
 {
     Imlib_Image im;
 
-    if (!opt.silent)
-        XBell(disp, 0);
-
     im = imlib_create_image_from_drawable(0, 0, 0, scr->width,
         scr->height, 1);
     if (opt.pointer)

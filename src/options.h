@@ -51,7 +51,6 @@ struct ScrotOptions {
     int focused;
     int quality;
     int border;
-    int silent;
     int multidisp;
     int thumb;
     int thumbWidth;
