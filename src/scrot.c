@@ -133,7 +133,7 @@ int main(int argc, char *argv[])
     tm = localtime(&t);
 
     imlib_context_set_image(image);
-    imlib_image_attach_data_value("quality", NULL, opt.quality, NULL);
+    imlib_image_attach_data_value("quality", NULL, 100, NULL);
 
     if (!haveExtension)
         imlib_image_set_format("png");

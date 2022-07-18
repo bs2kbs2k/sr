@@ -77,7 +77,6 @@ enum {
 };
 
 struct ScrotOptions opt = {
-    .quality = 75,
     .lineStyle = LineSolid,
     .lineWidth = 1,
     .lineOpacity = SELECTION_OPACITY_DEFAULT,
@@ -359,7 +358,6 @@ void optionsParse(int argc, char *argv[])
         { "stack", optional_argument, 0, 'k' },
         { "select", optional_argument, 0, 's' },
         { "thumb", required_argument, 0, 't' },
-        { "quality", required_argument, 0, 'q' },
         { "autoselect", required_argument, 0, 'a' },
         { "display", required_argument, 0, 'D' },
         { "note", required_argument, 0, 'n' },
@@ -386,9 +384,6 @@ void optionsParse(int argc, char *argv[])
             break;
         case 'm':
             opt.multidisp = 1;
-            break;
-        case 'q':
-            opt.quality = optionsParseRequiredNumber(optarg);
             break;
         case 's':
             optionsParseSelection(optarg);
