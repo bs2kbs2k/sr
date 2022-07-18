@@ -369,7 +369,6 @@ void optionsParse(int argc, char *argv[])
         { "note", required_argument, 0, 'n' },
         { "line", required_argument, 0, 'l' },
         { "class", required_argument, 0, 'C' },
-        { "script", required_argument, 0, 'S' },
         { "file", required_argument, 0, 'F' },
         { 0, 0, 0, 0 }
     };
@@ -443,9 +442,6 @@ void optionsParse(int argc, char *argv[])
             break;
         case 'C':
             optionsParseWindowClassName(optarg);
-            break;
-        case 'S':
-            opt.script = estrdup(optarg);
             break;
         case 'F':
             optionsParseFileName(optarg);

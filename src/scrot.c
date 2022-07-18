@@ -68,7 +68,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 static void uninitXAndImlib(void);
 static size_t scrotHaveFileExtension(const char *, char **);
 static Imlib_Image scrotGrabFocused(void);
-static void applyFilterIfRequired(void);
 static Bool scrotXEventVisibility(Display *, XEvent *, XPointer);
 static Imlib_Image scrotGrabAutoselect(void);
 static Imlib_Image scrotGrabShotMulti(void);
@@ -143,8 +142,6 @@ int main(int argc, char *argv[])
 
     filenameIM = imPrintf(opt.outputFile, tm, NULL, NULL, image);
     scrotCheckIfOverwriteFile(&filenameIM);
-
-    applyFilterIfRequired();
 
     imlib_save_image_with_error_return(filenameIM, &imErr);
     if (imErr)
@@ -438,13 +435,6 @@ void scrotGrabMousePointer(const Imlib_Image image, const int xOffset,
         height);
     imlib_context_set_image(imcursor);
     imlib_free_image();
-}
-
-// It assumes that the local variable 'scrot.c:Imlib_Image image' is in context
-static void applyFilterIfRequired(void)
-{
-    if (opt.script)
-        imlib_apply_filter(opt.script);
 }
 
 static void scrotCheckIfOverwriteFile(char **filename)
