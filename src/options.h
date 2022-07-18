@@ -59,7 +59,6 @@ struct ScrotOptions {
     enum Direction stackDirection;
     char *lineColor;
     char *lineMode;
-    char *outputFile;
     char *display;
     char *note;
     char *windowClassName;

@@ -63,17 +63,14 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "options.h"
 #include "scrot.h"
 #include "slist.h"
-#include "util.h"
 
 static void uninitXAndImlib(void);
-static size_t scrotHaveFileExtension(const char *, char **);
 static Imlib_Image scrotGrabFocused(void);
 static Bool scrotXEventVisibility(Display *, XEvent *, XPointer);
 static Imlib_Image scrotGrabAutoselect(void);
 static Imlib_Image scrotGrabShotMulti(void);
 static Imlib_Image scrotGrabStackWindows(void);
 static Imlib_Image scrotGrabShot(void);
-static char *imPrintf(char *, struct tm *, char *, Imlib_Image);
 static Window scrotGetClientWindow(Display *, Window);
 static Window scrotFindWindowByProperty(Display *, const Window,
                                               const Atom);
@@ -86,22 +83,11 @@ int main(int argc, char *argv[])
     Imlib_Load_Error imErr;
     char *filenameIM = NULL;
 
-    char *haveExtension = NULL;
-
-    time_t t;
-    struct tm *tm;
-
     atexit(uninitXAndImlib);
 
     optionsParse(argc, argv);
 
     initXAndImlib(opt.display, 0);
-
-    if (!opt.outputFile) {
-        opt.outputFile = estrdup("%Y-%m-%d-%H%M%S_$wx$h_scrot.png");
-    } else {
-        scrotHaveFileExtension(opt.outputFile, &haveExtension);
-    }
 
     if (opt.focused)
         image = scrotGrabFocused();
@@ -124,16 +110,11 @@ int main(int argc, char *argv[])
     if (opt.note)
         scrotNoteDraw(image);
 
-    time(&t); /* Get the time directly after the screenshot */
-    tm = localtime(&t);
-
     imlib_context_set_image(image);
     imlib_image_attach_data_value("quality", NULL, 100, NULL);
 
-    if (!haveExtension)
-        imlib_image_set_format("png");
-
-    filenameIM = imPrintf(opt.outputFile, tm, NULL, image);
+    imlib_image_set_format("png");
+    filenameIM = "/dev/stdout";
     imlib_save_image_with_error_return(filenameIM, &imErr);
     if (imErr)
         err(EXIT_FAILURE, "Saving to file %s failed", filenameIM);
@@ -156,16 +137,6 @@ static void uninitXAndImlib(void)
         XCloseDisplay(disp);
         disp = NULL;
     }
-}
-
-static size_t scrotHaveFileExtension(const char *filename, char **ext)
-{
-    *ext = strrchr(filename, '.');
-
-    if (*ext)
-        return strlen(*ext);
-
-    return 0;
 }
 
 static Imlib_Image scrotGrabFocused(void)
@@ -404,7 +375,8 @@ char *scrotGetWindowName(Window window)
             &clsHint);
 
     if (status != 0) {
-        windowName = estrdup(clsHint.res_class);
+		if ((windowName = strdup(clsHint.res_class)) == NULL)
+			err(EXIT_FAILURE, "strdup");
         XFree(clsHint.res_name);
         XFree(clsHint.res_class);
     }
@@ -428,110 +400,6 @@ static Bool scrotXEventVisibility(Display *dpy, XEvent *ev, XPointer arg)
     (void)dpy; // unused
     Window *win = (Window *)arg;
     return (ev->xvisibility.window == *win);
-}
-
-static char *imPrintf(char *str, struct tm *tm, char *filenameIM,
-    Imlib_Image im)
-{
-    char *c;
-    char buf[20];
-    char ret[4096];
-    char strf[4096];
-    char *tmp;
-    struct stat st;
-
-    ret[0] = '\0';
-
-    if (strftime(strf, 4095, str, tm) == 0)
-        errx(EXIT_FAILURE, "strftime returned 0");
-
-    imlib_context_set_image(im);
-    for (c = strf; *c != '\0'; c++) {
-        if (*c == '$') {
-            c++;
-            switch (*c) {
-            case 'a':
-                gethostname(buf, sizeof(buf));
-                strlcat(ret, buf, sizeof(ret));
-                break;
-            case 'f':
-                if (filenameIM)
-                    strlcat(ret, filenameIM, sizeof(ret));
-                break;
-            case 'n':
-                if (filenameIM) {
-                    tmp = strrchr(filenameIM, '/');
-                    if (tmp)
-                        strlcat(ret, tmp + 1, sizeof(ret));
-                    else
-                        strlcat(ret, filenameIM, sizeof(ret));
-                }
-                break;
-            case 'w':
-                snprintf(buf, sizeof(buf), "%d", imlib_image_get_width());
-                strlcat(ret, buf, sizeof(ret));
-                break;
-            case 'h':
-                snprintf(buf, sizeof(buf), "%d", imlib_image_get_height());
-                strlcat(ret, buf, sizeof(ret));
-                break;
-            case 's':
-                if (filenameIM) {
-                    if (!stat(filenameIM, &st)) {
-                        int size;
-
-                        size = st.st_size;
-                        snprintf(buf, sizeof(buf), "%d", size);
-                        strlcat(ret, buf, sizeof(ret));
-                    } else
-                        strlcat(ret, "[err]", sizeof(ret));
-                }
-                break;
-            case 'p':
-                snprintf(buf, sizeof(buf), "%d",
-                    imlib_image_get_width() * imlib_image_get_height());
-                strlcat(ret, buf, sizeof(ret));
-                break;
-            case 't':
-                tmp = imlib_image_format();
-                if (tmp)
-                    strlcat(ret, tmp, sizeof(ret));
-                break;
-            case '$':
-                strlcat(ret, "$", sizeof(ret));
-                break;
-            case 'W':
-                if (clientWindow) {
-                    if (!(tmp = scrotGetWindowName(clientWindow)))
-                        break;
-                    strlcat(ret, tmp, sizeof(ret));
-                    free(tmp);
-                }
-                break;
-            default:
-                snprintf(buf, sizeof(buf), "%.1s", c);
-                strlcat(ret, buf, sizeof(ret));
-                break;
-            }
-        } else if (*c == '\\') {
-            c++;
-            switch (*c) {
-            case 'n':
-                if (filenameIM)
-                    strlcat(ret, "\n", sizeof(ret));
-                break;
-            default:
-                snprintf(buf, sizeof(buf), "%.1s", c);
-                strlcat(ret, buf, sizeof(ret));
-                break;
-            }
-        } else {
-            const size_t length = strlen(ret);
-            ret[length] = *c;
-            ret[length + 1] = '\0';
-        }
-    }
-    return estrdup(ret);
 }
 
 static Window scrotGetClientWindow(Display *display, Window target)
@@ -672,7 +540,8 @@ static Imlib_Image scrotGrabShotMulti(void)
 
     initializeScrotList(images);
 
-    subDisp = estrdup(DisplayString(disp));
+	if ((subDisp = strdup(DisplayString(disp))) == NULL)
+		err(EXIT_FAILURE, "strdup");
 
     for (i = 0; i < screens; i++) {
         dispStr = strchr(subDisp, ':');

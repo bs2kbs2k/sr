@@ -55,7 +55,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "options.h"
 #include "scrot.h"
 #include "scrot_selection.h"
-#include "util.h"
 
 #define STR_LEN_MAX_FILENAME(msg, fileName) do {                \
     if (strlen((fileName)) > MAX_FILENAME) {                    \
@@ -86,6 +85,14 @@ struct ScrotOptions opt = {
 
 static void showUsage(void);
 static void showVersion(void);
+
+char *estrdup(const char *str)
+{
+    char *p;
+    if ((p = strdup(str)) == NULL)
+        err(EXIT_FAILURE, "strdup");
+    return p;
+}
 
 int optionsParseRequiredNumber(const char *str)
 {
@@ -311,34 +318,6 @@ static void optionsParseWindowClassName(const char *windowClassName)
         opt.windowClassName = strndup(windowClassName, MAX_LEN_WINDOW_CLASS_NAME);
 }
 
-static bool accessFileOk(const char *const pathName)
-{
-    errno = 0;
-    return (0 == access(pathName, W_OK));
-}
-
-static char *getPathOfStdout(void)
-{
-    char path[16] = {"/dev/stdout"};
-    const size_t len = sizeof(path);
-
-    if (!accessFileOk(path)) {
-
-        snprintf(path, len, "/dev/fd/%d", STDOUT_FILENO);
-
-        if (!accessFileOk(path)) {
-
-            snprintf(path, len, "/proc/self/fd/%d", STDOUT_FILENO);
-
-            if (!accessFileOk(path)) {
-                // We quit because imlib2 will fail later anyway.
-                err(EXIT_FAILURE, "access to stdout failed");
-            }
-        }
-    }
-    return strndup(path, len);
-}
-
 void optionsParse(int argc, char *argv[])
 {
     static char stropts[] = "a:ofipbcd:e:hmq:s::t:uvzn:l:D:k::C:S:F:";
@@ -362,7 +341,6 @@ void optionsParse(int argc, char *argv[])
         { "note", required_argument, 0, 'n' },
         { "line", required_argument, 0, 'l' },
         { "class", required_argument, 0, 'C' },
-        { "file", required_argument, 0, 'F' },
         { 0, 0, 0, 0 }
     };
     int optch = 0, cmdx = 0;
@@ -418,31 +396,11 @@ void optionsParse(int argc, char *argv[])
         case 'C':
             optionsParseWindowClassName(optarg);
             break;
-        case 'F':
-            optionsParseFileName(optarg);
-            break;
         case '?':
             exit(EXIT_FAILURE);
         default:
             break;
         }
-    }
-
-    /* Now the leftovers, which must be files */
-    while (optind < argc) {
-        /* If recursive is NOT set, but the only argument is a directory
-           name, we grab all the files in there, but not subdirs */
-        if (!opt.outputFile) {
-            optionsParseFileName(argv[optind++]);
-
-            const bool redirectChar = ( opt.outputFile[0] == '-'
-                                        && opt.outputFile[1] == '\0');
-            if (redirectChar) {
-                free(opt.outputFile);
-                opt.outputFile = getPathOfStdout();
-            }
-        } else
-            warnx("unrecognised option %s", argv[optind++]);
     }
 
     /* So that we can safely be called again */
@@ -493,12 +451,6 @@ void optionsParseDisplay(char *optarg)
     opt.display = strndup(optarg, MAX_DISPLAY_NAME);
     if (!opt.display)
         err(EXIT_FAILURE, "Unable to allocate display");
-}
-
-void optionsParseFileName(const char *optarg)
-{
-    checkMaxOutputFileName(optarg);
-    opt.outputFile = estrdup(optarg);
 }
 
 void optionsParseNote(char *optarg)
