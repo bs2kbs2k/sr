@@ -82,9 +82,6 @@ struct ScrotOptions opt = {
     .stackDirection = HORIZONTAL,
 };
 
-static void showUsage(void);
-static void showVersion(void);
-
 char *estrdup(const char *str)
 {
     char *p;
@@ -323,10 +320,7 @@ void optionsParse(int argc, char *argv[])
 
     static struct option lopts[] = {
         /* actions */
-        { "help", no_argument, 0, 'h' },
-        { "version", no_argument, 0, 'v' },
         { "focused", no_argument, 0, 'u' },
-        { "focussed", no_argument, 0, 'u' }, /* macquarie dictionary has both spellings */
         { "border", no_argument, 0, 'b' },
         { "pointer", no_argument, 0, 'p' },
         { "ignorekeyboard", no_argument, 0, 'i' },
@@ -346,12 +340,6 @@ void optionsParse(int argc, char *argv[])
     while ((optch = getopt_long(argc, argv, stropts, lopts, &cmdx)) != EOF) {
         switch (optch) {
         case 0:
-            break;
-        case 'h':
-            showUsage();
-            break;
-        case 'v':
-            showVersion();
             break;
         case 'b':
             opt.border = 1;
@@ -387,8 +375,6 @@ void optionsParse(int argc, char *argv[])
         case 'C':
             optionsParseWindowClassName(optarg);
             break;
-        case '?':
-            exit(EXIT_FAILURE);
         default:
             break;
         }
@@ -396,22 +382,6 @@ void optionsParse(int argc, char *argv[])
 
     /* So that we can safely be called again */
     optind = 1;
-}
-
-static void showUsage(void)
-{
-    fputs(/* Check that everything lines up after any changes. */
-        "usage:  " PACKAGE " [-bcfhimopuvz] [-a X,Y,W,H] [-C NAME] [-D DISPLAY]\n"
-        "              [-d SEC] [-e CMD] [-F FILE] [-k OPT] [-l STYLE] [-n OPTS]\n"
-        "              [-q NUM] [-S CMD] [-s OPTS] [-t NUM | GEOM] [FILE]\n",
-        stdout);
-    exit(0);
-}
-
-static void showVersion(void)
-{
-    printf(PACKAGE " version " VERSION "\n");
-    exit(0);
 }
 
 void optionsParseAutoselect(char *optarg)
