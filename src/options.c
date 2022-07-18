@@ -51,7 +51,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <unistd.h>
 
 #include "config.h"
-#include "note.h"
 #include "options.h"
 #include "scrot.h"
 #include "scrot_selection.h"
@@ -337,7 +336,6 @@ void optionsParse(int argc, char *argv[])
         { "select", optional_argument, 0, 's' },
         { "autoselect", required_argument, 0, 'a' },
         { "display", required_argument, 0, 'D' },
-        { "note", required_argument, 0, 'n' },
         { "line", required_argument, 0, 'l' },
         { "class", required_argument, 0, 'C' },
         { 0, 0, 0, 0 }
@@ -378,9 +376,6 @@ void optionsParse(int argc, char *argv[])
             break;
         case 'D':
             optionsParseDisplay(optarg);
-            break;
-        case 'n':
-            optionsParseNote(optarg);
             break;
         case 'l':
             optionsParseLine(optarg);
@@ -447,22 +442,6 @@ void optionsParseDisplay(char *optarg)
     opt.display = strndup(optarg, MAX_DISPLAY_NAME);
     if (!opt.display)
         err(EXIT_FAILURE, "Unable to allocate display");
-}
-
-void optionsParseNote(char *optarg)
-{
-    if (opt.note)
-        free(opt.note);
-
-    opt.note = estrdup(optarg);
-
-    if (!opt.note)
-        return;
-
-    if (opt.note[0] == '\0')
-        errx(EXIT_FAILURE, "Required arguments for --note.");
-
-    scrotNoteNew(opt.note);
 }
 
 /*

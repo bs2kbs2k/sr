@@ -76,11 +76,6 @@ join letter: v/h (vertical/horizontal). Default: h
 option is used; see SELECTION \fISTYLE\fP.
 .TP
 .B
-\fB-n\fP, \fB--note\fP \fIOPTS\fP
-\fIOPTS\fP is a collection of options which specify notes
-to bake into the image. See NOTE FORMAT.
-.TP
-.B
 \fB-p\fP, \fB--pointer\fP
 Capture the mouse pointer.
 .TP
@@ -97,39 +92,6 @@ Use the currently focused window.
 .B
 \fB-v\fP, \fB--version\fP
 Output version information and exit.
-.SH SPECIAL STRINGS
-\fB-e\fP, \fB-F\fP and \fIFILE\fP parameters can take format specifiers that are expanded
-by \fBscrot\fP when encountered. There are two types of format specifier:
-Characters preceded by a '%' are interpreted by \fBstrftime\fP(2). The second kind
-are internal to \fBscrot\fP and are prefixed by '$'. The following specifiers are
-recognised by \fBscrot\fP:
-.PP
-.nf
-.fam C
-    $$   A literal '$'.
-    $a   The system's hostname.
-    $f   The image's full path (ignored when used in the filename).
-    $h   The image's height.
-    $m   The thumbnail's full path (ignored when used in the filename).
-    $n   The image's basename (ignored when used in the filename).
-    $p   The image's pixel size.
-    $s   The image's size in bytes (ignored when used in the filename).
-    $t   The image's file format (ignored when used in the filename).
-    $w   The image's width.
-    \\n   A literal newline (ignored when used in the filename).
-
-.fam T
-.fi
-Example:
-.PP
-.nf
-.fam C
-    $ scrot '%Y-%m-%d_$wx$h.png' -e 'optipng $f'
-
-.fam T
-.fi
-This would create a PNG file with a name similar to 2000-10-30_2560x1024.png
-and optimize it with \fBoptipng\fP(1).
 .SH SELECTION MODE
 When using \fB-s\fP, optionally you can indicate the action to perform with the selection area.
 Some actions allow optional parameters too.
@@ -211,29 +173,6 @@ Example:
 .nf
 .fam C
     $ scrot -l style=dash,width=3,color="red" -s
-
-.fam T
-.fi
-.SH NOTE FORMAT
-The \fB-n\fP option's argument is more arguments:
-.PP
-.nf
-.fam C
-    -f  'FontName/size'
-    -t  'text'
-    -x  position (optional)
-    -y  position (optional)
-    -c  color(RGBA, range 0..255) (optional)
-    -a  angle (optional)
-
-.fam T
-.fi
-Example:
-.PP
-.nf
-.fam C
-    $ scrot -n "-f '/usr/share/fonts/TTF/DroidSans-Bold/40' -x 10
-            -y 20 -c 255,0,0,255 -t 'Hi'"
 
 .fam T
 .fi

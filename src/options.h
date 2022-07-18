@@ -59,7 +59,6 @@ struct ScrotOptions {
     char *lineColor;
     char *lineMode;
     char *display;
-    char *note;
     char *windowClassName;
     int autoselect;
     int autoselectX;
@@ -75,7 +74,6 @@ void optionsParse(int, char **);
 void optionsParseFileName(const char *);
 void optionsParseAutoselect(char *);
 void optionsParseDisplay(char *);
-void optionsParseNote(char *);
 int optionsParseRequiredNumber(const char *);
 int optionsCompareWindowClassName(const char *);
 int optionsParseRequireRange(int, int, int);

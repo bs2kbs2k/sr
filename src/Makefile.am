@@ -38,7 +38,6 @@ scrot_CPPFLAGS = @CPPFLAGS@
 scrot_LDADD    = @LIBS@
 scrot_SOURCES  = scrot.c scrot.h        \
 imlib.c imlib.h                         \
-note.c note.h                           \
 options.c options.h                     \
 scrot_selection.c scrot_selection.h     \
 selection_classic.c selection_classic.h \

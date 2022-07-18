@@ -59,7 +59,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <X11/extensions/Xfixes.h>
 
 #include "imlib.h"
-#include "note.h"
 #include "options.h"
 #include "scrot.h"
 #include "slist.h"
@@ -104,9 +103,6 @@ int main(int argc, char *argv[])
     if (!image)
         err(EXIT_FAILURE, "no image grabbed");
 
-    if (opt.note)
-        scrotNoteDraw(image);
-
     imlib_context_set_image(image);
     imlib_image_attach_data_value("quality", NULL, 100, NULL);
 
@@ -125,11 +121,6 @@ int main(int argc, char *argv[])
 /* atexit register func. */
 static void uninitXAndImlib(void)
 {
-    if (opt.note) {
-        scrotNoteFree();
-        free(opt.note);
-    }
-
     if (disp) {
         XCloseDisplay(disp);
         disp = NULL;
