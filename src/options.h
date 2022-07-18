@@ -38,13 +38,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "scrot_selection.h"
 
-// General purpose enum
-enum Direction {
-    // see scrot.c:stalkImageConcat(...)
-    HORIZONTAL,
-    VERTICAL,
-};
-
 struct ScrotOptions {
     int focused;
     int border;
@@ -54,12 +47,9 @@ struct ScrotOptions {
     int lineStyle;
     int lineWidth;
     int lineOpacity;
-    int stack;
-    enum Direction stackDirection;
     char *lineColor;
     char *lineMode;
     char *display;
-    char *windowClassName;
     int autoselect;
     int autoselectX;
     int autoselectY;
@@ -71,9 +61,6 @@ struct ScrotOptions {
 extern struct ScrotOptions opt;
 
 void optionsParse(int, char **);
-void optionsParseFileName(const char *);
 void optionsParseAutoselect(char *);
-void optionsParseDisplay(char *);
 int optionsParseRequiredNumber(const char *);
-int optionsCompareWindowClassName(const char *);
 int optionsParseRequireRange(int, int, int);

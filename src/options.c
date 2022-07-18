@@ -79,7 +79,6 @@ struct ScrotOptions opt = {
     .lineWidth = 1,
     .lineOpacity = SELECTION_OPACITY_DEFAULT,
     .lineMode = LINE_MODE_S_CLASSIC,
-    .stackDirection = HORIZONTAL,
 };
 
 char *estrdup(const char *str)
@@ -125,30 +124,6 @@ int optionsParseRequireRange(int n, int lo, int hi)
 static bool optionsParseIsString(const char *const str)
 {
     return (str && (str[0] != '\0'));
-}
-
-static void optionsParseStack(const char *optarg)
-{
-    // the suboption it's optional
-    if (!optarg) {
-        opt.stackDirection = HORIZONTAL;
-        return;
-    }
-    const char *value = strchr(optarg, '=');
-
-    if (value)
-        ++value;
-    else
-        value = optarg;
-
-    if (*value == 'v')
-        opt.stackDirection = VERTICAL;
-    else if (*value == 'h')
-        opt.stackDirection = HORIZONTAL;
-    else {
-        errx(EXIT_FAILURE, "option --stack: Unknown value for suboption '%s'",
-             value);
-    }
 }
 
 static void optionsParseLine(char *optarg)
@@ -242,14 +217,6 @@ static void optionsParseLine(char *optarg)
     } /* while */
 }
 
-static void optionsParseWindowClassName(const char *windowClassName)
-{
-    assert(windowClassName != NULL);
-
-    if (windowClassName[0] != '\0')
-        opt.windowClassName = strndup(windowClassName, MAX_LEN_WINDOW_CLASS_NAME);
-}
-
 void optionsParse(int argc, char *argv[])
 {
     static char stropts[] = "a:ofipbcd:e:hmq:s::t:uvzn:l:D:k::C:S:F:";
@@ -262,12 +229,10 @@ void optionsParse(int argc, char *argv[])
         { "ignorekeyboard", no_argument, 0, 'i' },
         { "freeze", no_argument, 0, 'f' },
         /* toggles */
-        { "stack", optional_argument, 0, 'k' },
         { "select", optional_argument, 0, 's' },
         { "autoselect", required_argument, 0, 'a' },
         { "display", required_argument, 0, 'D' },
         { "line", required_argument, 0, 'l' },
-        { "class", required_argument, 0, 'C' },
         { 0, 0, 0, 0 }
     };
     int optch = 0, cmdx = 0;
@@ -295,21 +260,34 @@ void optionsParse(int argc, char *argv[])
         case 'f':
             opt.freeze = 1;
             break;
-        case 'a':
-            optionsParseAutoselect(optarg);
-            break;
+        case 'a': ;
+		    char *token;
+		    const char tokenDelimiter[2] = ",";
+		    int dimensions[4];
+		    int i = 0;
+		
+		    if (strchr(optarg, ',')) { /* geometry dimensions must be in format x,y,w,h   */
+		        dimensions[i++] = optionsParseRequiredNumber(strtok(optarg, tokenDelimiter));
+		        while ((token = strtok(NULL, tokenDelimiter)))
+		            dimensions[i++] = optionsParseRequiredNumber(token);
+		        opt.autoselect = 1;
+		        opt.autoselectX = dimensions[0];
+		        opt.autoselectY = dimensions[1];
+		        opt.autoselectW = dimensions[2];
+		        opt.autoselectH = dimensions[3];
+		
+		        if (i != 4)
+		            errx(EXIT_FAILURE, "option 'autoselect' require 4 arguments");
+		    } else
+		        errx(EXIT_FAILURE, "invalid format for option -- 'autoselect'");
+		            break;
         case 'D':
-            optionsParseDisplay(optarg);
-            break;
+		    opt.display = strndup(optarg, MAX_DISPLAY_NAME);
+		    if (!opt.display)
+		        err(EXIT_FAILURE, "Unable to allocate display");
+		            break;
         case 'l':
             optionsParseLine(optarg);
-            break;
-        case 'k':
-            opt.stack = 1;
-            optionsParseStack(optarg);
-            break;
-        case 'C':
-            optionsParseWindowClassName(optarg);
             break;
         default:
             break;
@@ -318,46 +296,4 @@ void optionsParse(int argc, char *argv[])
 
     /* So that we can safely be called again */
     optind = 1;
-}
-
-void optionsParseAutoselect(char *optarg)
-{
-    char *token;
-    const char tokenDelimiter[2] = ",";
-    int dimensions[4];
-    int i = 0;
-
-    if (strchr(optarg, ',')) { /* geometry dimensions must be in format x,y,w,h   */
-        dimensions[i++] = optionsParseRequiredNumber(strtok(optarg, tokenDelimiter));
-        while ((token = strtok(NULL, tokenDelimiter)))
-            dimensions[i++] = optionsParseRequiredNumber(token);
-        opt.autoselect = 1;
-        opt.autoselectX = dimensions[0];
-        opt.autoselectY = dimensions[1];
-        opt.autoselectW = dimensions[2];
-        opt.autoselectH = dimensions[3];
-
-        if (i != 4)
-            errx(EXIT_FAILURE, "option 'autoselect' require 4 arguments");
-    } else
-        errx(EXIT_FAILURE, "invalid format for option -- 'autoselect'");
-}
-
-void optionsParseDisplay(char *optarg)
-{
-    opt.display = strndup(optarg, MAX_DISPLAY_NAME);
-    if (!opt.display)
-        err(EXIT_FAILURE, "Unable to allocate display");
-}
-
-/*
-Return:
-    0 : It does not match
-    1 : If it matches
-*/
-int optionsCompareWindowClassName(const char *targetClassName)
-{
-    assert(targetClassName != NULL);
-    assert(opt.windowClassName != NULL);
-    return !!(!strncmp(targetClassName, opt.windowClassName, MAX_LEN_WINDOW_CLASS_NAME - 1));
 }

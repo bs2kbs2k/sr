@@ -67,12 +67,10 @@ static void uninitXAndImlib(void);
 static Imlib_Image scrotGrabFocused(void);
 static Bool scrotXEventVisibility(Display *, XEvent *, XPointer);
 static Imlib_Image scrotGrabAutoselect(void);
-static Imlib_Image scrotGrabStackWindows(void);
 static Imlib_Image scrotGrabShot(void);
 static Window scrotGetClientWindow(Display *, Window);
 static Window scrotFindWindowByProperty(Display *, const Window,
                                               const Atom);
-static Imlib_Image stalkImageConcat(ScrotList *, const enum Direction);
 static int findWindowManagerFrame(Window *const, int *const);
 
 int main(int argc, char *argv[])
@@ -94,10 +92,7 @@ int main(int argc, char *argv[])
     else if (opt.autoselect)
         image = scrotGrabAutoselect();
     else {
-        if (opt.stack)
-            image = scrotGrabStackWindows();
-        else
-            image = scrotGrabShot();
+        image = scrotGrabShot();
     }
 
     if (!image)
@@ -319,31 +314,6 @@ void scrotGrabMousePointer(const Imlib_Image image, const int xOffset,
     imlib_free_image();
 }
 
-static int scrotMatchWindowClassName(Window target)
-{
-    assert(disp != NULL);
-
-    const int NOT_MATCH = 0;
-    const int MATCH = 1;
-    /* By default all class names match since windowClassName by default is NULL
-     */
-    int retval = MATCH;
-
-    if (!opt.windowClassName)
-        return retval;
-
-    XClassHint clsHint;
-    retval = NOT_MATCH; // windowClassName != NULL, by default NOT_MATCH
-
-    if (XGetClassHint(disp, target, &clsHint) != BadWindow) {
-        retval = optionsCompareWindowClassName(clsHint.res_class);
-        XFree(clsHint.res_name);
-        XFree(clsHint.res_class);
-    }
-
-    return retval;
-}
-
 char *scrotGetWindowName(Window window)
 {
     assert(disp != NULL);
@@ -441,135 +411,4 @@ static Window scrotFindWindowByProperty(Display *display, const Window window,
     if (children != None)
         XFree(children);
     return (child);
-}
-
-static Imlib_Image scrotGrabStackWindows(void)
-{
-    if (XGetSelectionOwner(disp, XInternAtom(disp, "_NET_WM_CM_S0", False))
-        == None) {
-        errx(EXIT_FAILURE, "option --stack: Composite Manager is not running,"
-            " required to use this option.");
-    }
-
-    unsigned long numberItemsReturn;
-    unsigned long bytesAfterReturn;
-    unsigned char *propReturn;
-    long offset = 0L;
-    long length = ~0L;
-    Bool delete = False;
-    int actualFormatReturn;
-    Atom actualTypeReturn;
-    Imlib_Image im = NULL;
-    XImage *ximage = NULL;
-    XWindowAttributes attr;
-    unsigned long i = 0;
-
-#define EWMH_CLIENT_LIST "_NET_CLIENT_LIST" // spec EWMH
-
-    Atom atomProp = XInternAtom(disp, EWMH_CLIENT_LIST, False);
-    Atom atomType = AnyPropertyType;
-
-    int result = XGetWindowProperty(disp, root, atomProp, offset, length,
-        delete, atomType, &actualTypeReturn, &actualFormatReturn,
-        &numberItemsReturn, &bytesAfterReturn, &propReturn);
-
-    if (result != Success || numberItemsReturn == 0) {
-        errx(EXIT_FAILURE, "option --stack: Failed XGetWindowProperty: %s",
-            EWMH_CLIENT_LIST);
-    }
-
-    initializeScrotList(images);
-
-    XCompositeRedirectSubwindows(disp, root, CompositeRedirectAutomatic);
-
-    for (i = 0; i < numberItemsReturn; i++) {
-        Window win = *((Window *)propReturn + i);
-
-        if (!XGetWindowAttributes(disp, win, &attr))
-            errx(EXIT_FAILURE, "option --stack: Failed XGetWindowAttributes");
-
-        /* Only visible windows */
-        if (attr.map_state != IsViewable)
-            continue;
-
-        if (!scrotMatchWindowClassName(win))
-            continue;
-
-        ximage = XGetImage(disp, win, 0, 0, attr.width, attr.height, AllPlanes,
-            ZPixmap);
-
-        if (!ximage) {
-            errx(EXIT_FAILURE,
-                "option --stack: Failed XGetImage: Window id 0x%lx", win);
-        }
-
-        im = imlib_create_image_from_ximage(ximage, NULL, attr.x, attr.y,
-            attr.width, attr.height, 1);
-
-        XFree(ximage);
-
-        appendToScrotList(images, im);
-    }
-
-    return stalkImageConcat(&images, opt.stackDirection);
-}
-
-static Imlib_Image stalkImageConcat(ScrotList *images, const enum Direction dir)
-{
-    if (isEmptyScrotList(images))
-        return NULL;
-
-    int total = 0, max = 0;
-    int x = 0, y = 0, w , h;
-    Imlib_Image ret, im;
-    ScrotListNode *image = NULL;
-
-    const bool vertical = (dir == VERTICAL) ? true : false;
-
-    forEachScrotList(images, image) {
-        im = (Imlib_Image) image->data;
-        imlib_context_set_image(im);
-        h = imlib_image_get_height();
-        w = imlib_image_get_width();
-        if (!vertical) {
-            if (h > max)
-                max = h;
-            total += w;
-        } else {
-            if (w > max)
-                max = w;
-            total += h;
-        }
-    }
-    if (!vertical) {
-        w = total;
-        h = max;
-    } else {
-        w = max;
-        h = total;
-    }
-    ret = imlib_create_image(w, h);
-
-    imlib_context_set_image(ret);
-    imlib_context_set_color(0, 0, 0, 255);
-    imlib_image_fill_rectangle(0, 0, w, h);
-
-    image = firstScrotList(images);
-    while (image) {
-        im = (Imlib_Image) image->data;
-        imlib_context_set_image(im);
-        h = imlib_image_get_height();
-        w = imlib_image_get_width();
-        imlib_context_set_image(ret);
-        imlib_context_set_anti_alias(0);
-        imlib_context_set_dither(1);
-        imlib_context_set_blend(0);
-        imlib_context_set_angle(0);
-        imlib_blend_image_onto_image(im, 0, 0, 0, w, h, x, y, w, h);
-        (!vertical) ? (x += w) : (y += h);
-        imlib_context_set_image(im);
-        imlib_free_image_and_decache();
-        nextAndFreeScrotList(image);
-    }
-    return ret;
 }
