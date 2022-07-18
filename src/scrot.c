@@ -68,7 +68,6 @@ static void uninitXAndImlib(void);
 static Imlib_Image scrotGrabFocused(void);
 static Bool scrotXEventVisibility(Display *, XEvent *, XPointer);
 static Imlib_Image scrotGrabAutoselect(void);
-static Imlib_Image scrotGrabShotMulti(void);
 static Imlib_Image scrotGrabStackWindows(void);
 static Imlib_Image scrotGrabShot(void);
 static Window scrotGetClientWindow(Display *, Window);
@@ -96,9 +95,7 @@ int main(int argc, char *argv[])
     else if (opt.autoselect)
         image = scrotGrabAutoselect();
     else {
-        if (opt.multidisp)
-            image = scrotGrabShotMulti();
-        else if (opt.stack)
+        if (opt.stack)
             image = scrotGrabStackWindows();
         else
             image = scrotGrabShot();
@@ -524,42 +521,6 @@ static Imlib_Image scrotGrabStackWindows(void)
     }
 
     return stalkImageConcat(&images, opt.stackDirection);
-}
-
-static Imlib_Image scrotGrabShotMulti(void)
-{
-    int screens = ScreenCount(disp);
-    if (screens < 2)
-        return scrotGrabShot();
-
-    int i;
-    char *dispStr;
-    char *subDisp;
-    char newDisp[255];
-    Imlib_Image ret = NULL;
-
-    initializeScrotList(images);
-
-	if ((subDisp = strdup(DisplayString(disp))) == NULL)
-		err(EXIT_FAILURE, "strdup");
-
-    for (i = 0; i < screens; i++) {
-        dispStr = strchr(subDisp, ':');
-        if (dispStr) {
-            dispStr = strchr(dispStr, '.');
-            if (dispStr)
-                *dispStr = '\0';
-        }
-        snprintf(newDisp, sizeof(newDisp), "%s.%d", subDisp, i);
-        initXAndImlib(newDisp, i);
-        ret = imlib_create_image_from_drawable(0, 0, 0, scr->width,
-            scr->height, 1);
-
-        appendToScrotList(images, ret);
-    }
-    free(subDisp);
-
-    return stalkImageConcat(&images, HORIZONTAL);
 }
 
 static Imlib_Image stalkImageConcat(ScrotList *images, const enum Direction dir)

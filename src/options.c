@@ -329,7 +329,6 @@ void optionsParse(int argc, char *argv[])
         { "focused", no_argument, 0, 'u' },
         { "focussed", no_argument, 0, 'u' }, /* macquarie dictionary has both spellings */
         { "border", no_argument, 0, 'b' },
-        { "multidisp", no_argument, 0, 'm' },
         { "pointer", no_argument, 0, 'p' },
         { "ignorekeyboard", no_argument, 0, 'i' },
         { "freeze", no_argument, 0, 'f' },
@@ -358,9 +357,6 @@ void optionsParse(int argc, char *argv[])
             break;
         case 'b':
             opt.border = 1;
-            break;
-        case 'm':
-            opt.multidisp = 1;
             break;
         case 's':
             optionsParseSelection(optarg);

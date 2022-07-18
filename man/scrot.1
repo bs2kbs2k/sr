@@ -49,24 +49,8 @@ Use with \fB-s\fP to raise the focus of the window.
 \fINAME\fP is a window class name. Associative with \fB-k\fP.
 .TP
 .B
-\fB-c\fP, \fB--count\fP
-Display a countdown when used with \fB-d\fP.
-.TP
-.B
 \fB-D\fP, \fB--display\fP \fIDISPLAY\fP
 \fIDISPLAY\fP is the display to use; see \fBX\fP(7).
-.TP
-.B
-\fB-d\fP, \fB--delay\fP \fISEC\fP
-Wait \fISEC\fP seconds before taking a shot.
-.TP
-.B
-\fB-e\fP, \fB--exec\fP \fICMD\fP
-Execute \fICMD\fP on the saved image.
-.TP
-.B
-\fB-F\fP, \fB--file\fP
-File name. See SPECIAL STRINGS.
 .TP
 .B
 \fB-f\fP, \fB--freeze\fP
@@ -92,34 +76,13 @@ join letter: v/h (vertical/horizontal). Default: h
 option is used; see SELECTION \fISTYLE\fP.
 .TP
 .B
-\fB-m\fP, \fB--multidisp\fP
-For multiple heads, screenshot all of them in order.
-.TP
-.B
 \fB-n\fP, \fB--note\fP \fIOPTS\fP
 \fIOPTS\fP is a collection of options which specify notes
 to bake into the image. See NOTE FORMAT.
 .TP
 .B
-\fB-o\fP, \fB--overwrite\fP
-By default \fBscrot\fP does not overwrite the output
-\fIFILE\fP, use this option to enable it.
-.TP
-.B
 \fB-p\fP, \fB--pointer\fP
 Capture the mouse pointer.
-.TP
-.B
-\fB-q\fP, \fB--quality\fP \fINUM\fP
-\fINUM\fP must be between 1 and 100. For lossless output
-formats, a higher value represents better but slower
-compression. For lossy output formats, a higher
-value represents higher quality and larger
-file size. Default: 75.
-.TP
-.B
-\fB-S\fP, \fB--script\fP \fICMD\fP
-\fICMD\fP is an imlib2 script.
 .TP
 .B
 \fB-s\fP, \fB--select\fP OPT
@@ -128,28 +91,12 @@ mouse, use the arrow keys to resize. See the \fB-l\fP and
 \fB-f\fP options. OPT it's optional; see SELECTION MODE
 .TP
 .B
-\fB-t\fP, \fB--thumb\fP \fINUM\fP | \fIGEOM\fP
-Also generate a thumbnail. The argument is the
-resolution of the thumbnail, it may be a percentage
-\fINUM\fP or a resolution \fIGEOM\fP. Examples: 10, 25, 320x240,
-500x200.
-.TP
-.B
 \fB-u\fP, \fB--focused\fP
 Use the currently focused window.
 .TP
 .B
 \fB-v\fP, \fB--version\fP
 Output version information and exit.
-.TP
-.B
-\fB-z\fP, \fB--silent\fP
-Prevent beeping.
-.TP
-.B
--
-Redirection to standard output. The output image
-format is PNG.
 .SH SPECIAL STRINGS
 \fB-e\fP, \fB-F\fP and \fIFILE\fP parameters can take format specifiers that are expanded
 by \fBscrot\fP when encountered. There are two types of format specifier:
