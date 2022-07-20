@@ -72,55 +72,6 @@ static Window scrotFindWindowByProperty(Display *, const Window,
                                               const Atom);
 static int findWindowManagerFrame(Window *const, int *const);
 
-int main(int argc, char *argv[])
-{
-    Imlib_Image image;
-    Imlib_Load_Error imErr;
-    char *filenameIM = NULL;
-
-    atexit(uninitXAndImlib);
-
-    optionsParse(argc, argv);
-
-    initXAndImlib(opt.display, 0);
-
-    if (opt.focused)
-        image = scrotGrabFocused();
-    else if (opt.selection.mode & SELECTION_MODE_ANY)
-        image = scrotSelectionSelectMode();
-    else if (opt.autoselect)
-        image = scrotGrabAutoselect();
-    else {
-        image = scrotGrabShot();
-    }
-
-    if (!image)
-        err(EXIT_FAILURE, "no image grabbed");
-
-    imlib_context_set_image(image);
-    imlib_image_attach_data_value("quality", NULL, 100, NULL);
-
-    imlib_image_set_format("png");
-    filenameIM = "/dev/stdout";
-    imlib_save_image_with_error_return(filenameIM, &imErr);
-    if (imErr)
-        err(EXIT_FAILURE, "Saving to file %s failed", filenameIM);
-
-    imlib_context_set_image(image);
-    imlib_free_image_and_decache();
-
-    return 0;
-}
-
-/* atexit register func. */
-static void uninitXAndImlib(void)
-{
-    if (disp) {
-        XCloseDisplay(disp);
-        disp = NULL;
-    }
-}
-
 static Imlib_Image scrotGrabFocused(void)
 {
     Imlib_Image im = NULL;
@@ -313,33 +264,6 @@ void scrotGrabMousePointer(const Imlib_Image image, const int xOffset,
     imlib_free_image();
 }
 
-char *scrotGetWindowName(Window window)
-{
-    assert(disp != NULL);
-    assert(window != None);
-
-    if (window == root)
-        return NULL;
-
-    if (!findWindowManagerFrame(&window, &(int){0}))
-        return NULL;
-
-    XClassHint clsHint;
-    char *windowName = NULL;
-
-    const Status status = XGetClassHint(disp,
-            scrotGetClientWindow(disp, window),
-            &clsHint);
-
-    if (status != 0) {
-		if ((windowName = strdup(clsHint.res_class)) == NULL)
-			err(EXIT_FAILURE, "strdup");
-        XFree(clsHint.res_name);
-        XFree(clsHint.res_class);
-    }
-    return windowName;
-}
-
 static Imlib_Image scrotGrabShot(void)
 {
     Imlib_Image im;
@@ -410,4 +334,94 @@ static Window scrotFindWindowByProperty(Display *display, const Window window,
     if (children != None)
         XFree(children);
     return (child);
+}
+
+/* sr - screenshot utility
+ * Copyright (C) 2022 ArcNyxx
+ * see LICENCE file for licensing information */
+
+#include <Imlib2.h>
+#include <X11/Xlib.h>
+
+#include "util.h"
+
+Display *dpy;
+Visual *vis;
+Window root;
+
+static void
+clip(int *x, int *y, int *w, int *h)
+{
+	if (*x < 0)
+		*w += *x, *x = 0;
+	if (*y < 0)
+		*h += *y, *y = 0;
+	if ((*x + *w) > scr->width)
+		*w = scr->width - *x;
+	if ((*y + *h) > scr->height)
+		*h = scr->height - *y;
+}
+
+static void
+dest(void)
+{
+	XCloseDisplay(dpy);
+}
+
+void
+geom(Window target, int *x, int *y, int *w, int *h)
+{
+	if (target != root) {
+		if (find
+	}
+}
+
+int
+main(int argc, char **argv)
+{
+	optionsParse(argc, argv);
+	if ((dpy = XOpenDisplay(opt.dpy)) == NULL)
+		die("sr: unable to open display\n");
+	atexit(dest);
+
+	Screen *scr = ScreenOfDisplay(dpy, DefaultScreen(dpy));
+	root = RootWindow(dpy, XScreenNumberOfScreen(scr));
+	vis = DefaultVisual(dpy, XScreenNumberOfScreen(scr));
+	imlib_context_set_display(dpy);
+	imlib_context_set_drawable(root);
+	imlib_context_set_visual(vis);
+	imlib_context_set_colormap(DefaultColormap(dpy,
+			XScreenNumberOfScreen(scr)));
+	imlib_context_set_color_modifier(NULL);
+	imlib_context_set_operation(IMLIB_OP_COPY);
+
+	Imlib_Image image;
+	if (opt.asel) {
+		clip(&opt.x, &opt.y, &opt.w, &opt.h);
+	} else if (opt.select) {
+		if (!select(&opt.x, &opt.y, &opt.w, &opt.h))
+			goto focus;
+	} else if (opt.focus) {
+focus:
+		Window target = 0; int ignore;
+		XGetInputFocus(dpy, &target, &ignore);
+		if (!geom(target, &opt.x, &opt.y, &opt.w, &opt.h))
+			die("sr: unable to get window\n");
+		clip(&opt.x, &opt.y, &opt.w, &opt.h);
+	} else {
+		opt.x = opt.y = 0, opt.w = scr->width, opt.h = scr->height;
+	}
+	image = imlib_create_image_from_drawable(0, x, y, w, h, true);
+	if (opt.ptr)
+		mouse(image, x, y);
+	if (image == NULL)
+		die("sr: unable to grab image\n");
+
+	Imlib_Load_Error ret;
+	imlib_context_set_image(image);
+	imlib_image_set_format("png");
+	imlib_image_attach_data_value("quality", NULL, 100, NULL);
+	imlib_save_image_with_error_return("/dev/stdout", &ret);
+	imlib_free_image_and_decache();
+	return ret != 0;
 }
