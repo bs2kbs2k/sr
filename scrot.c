@@ -362,12 +362,6 @@ clip(int *x, int *y, int *w, int *h)
 		*h = scr->height - *y;
 }
 
-static void
-dest(void)
-{
-	XCloseDisplay(dpy);
-}
-
 void
 geom(Window target, int *x, int *y, int *w, int *h)
 {
@@ -410,7 +404,6 @@ main(int argc, char **argv)
 
 	if ((dpy = XOpenDisplay(NULL)) == NULL)
 		die("sr: unable to open display\n");
-	atexit(dest);
 
 	Screen *scr = ScreenOfDisplay(dpy, DefaultScreen(dpy));
 	root = RootWindow(dpy, XScreenNumberOfScreen(scr));
@@ -427,17 +420,17 @@ main(int argc, char **argv)
 		XGrabServer(dpy);
 
 	Imlib_Image image;
-	if (opt.select == Constant) {
-		clip(&opt.x, &opt.y, &opt.w, &opt.h);
-	} else if (opt.Select == All) {
+	if (opt.select == All) {
 		opt.w = scr->width, opt.h = scr->height;
 	} else {
+		if (opt.select == Constant)
+			goto out;
 		if (opt.select == Select)
 			if (select(&opt.x, &opt.y, &opt.w, &opt.h))
 				goto out;
 
 		if (opt.select == Monitor) {
-
+			opt.w = opt.h = 1; /* TODO */
 		} else {
 			Window target = 0;
 			XGetInputFocus(dpy, &target, &(int){ });
@@ -448,11 +441,28 @@ out:
 		clip(&opt.x, &opt.y, &opt.w, &opt.h);
 	}
 	image = imlib_create_image_from_drawable(0, x, y, w, h, true);
-	if (opt.ptr)
-		mouse(image, x, y);
 	if (image == NULL)
 		die("sr: unable to grab image\n");
+	if (opt.ptr) {
+		XFixesCursorImage *cur;
+		if ((cur = XFixesGetCursorImage(dpy)) == NULL)
+		        die("sr: unable to get cursor image\n");
 
+		int data[cur->width * cur->height * sizeof(int)];
+		for (int i = 0; i < (cur->width * cur->height); ++i)
+		        data[i] = cur->pixels[i];
+
+		Imlib_Image img = imlib_create_image_using_data(cur->width,
+		                cur->height, data);
+		if (img == NULL)
+		        die("sr: unable to create cursor image\n");
+		XFree(cur);
+
+		imlib_blend_image_onto_image(img, 0, 0, 0, cur->width,
+				cur->height, x, y, cur->width, cur->height);
+		imlib_context_set_image(img);
+		imlib_free_image();
+	}
 	if (opt.freeze)
 		XUngrabServer(dpy);
 
@@ -462,5 +472,7 @@ out:
 	imlib_image_attach_data_value("quality", NULL, 100, NULL);
 	imlib_save_image_with_error_return("/dev/stdout", &ret);
 	imlib_free_image_and_decache();
+
+	XCloseDisplay(dpy);
 	return ret != 0;
 }

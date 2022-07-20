@@ -41,18 +41,10 @@ handle(XEvent *evt, int *x, int *y, int *w, int *h)
 				ButtonReleaseMask, cursor, CurrentTime);
 
 		sx = x, sy = y, sw = evt.xbutton.x - x, sh = evt.xbutton.y - y;
-		if (sw == 0) ++sw;
-		if (sh == 0) ++sh;
-		if (sw < 0) sx += sw, sw = -sw;
-		if (sh < 0) sy += sh, sh = -sh;
-		sx -= 1, sy -= 1, sw += 1, sh += 1;
-
-		XRectangles rects[] = {
-			{ sx,      sy, 1, sh }, { sx, sy,      sw,     1 },
-			{ sx + sw, sy, 1, sh }, { sx, sy + sh, sw + 1, 1 }
-		};
-		XShapeCombineRectangles(dpy, draw, ShapeBounding, 0, 0, rects,
-				4, ShapeSet, 0);
+		XRectangle ln[] = { { sx, sy, 1, sh }, { sx + sw, sy, 1, sh },
+				{ sx, sy + sh, sw, 1 },  { sx, sy, sw, 1 } };
+		XShapeCombineRectangles(dpy, draw, ShapeBounding, 0, 0, ln, 4,
+				ShapeSet, 0);
 		XMapWindow(dpy, draw);
 		break;
 	case ButtonPress:
@@ -88,7 +80,7 @@ handle(XEvent *evt, int *x, int *y, int *w, int *h)
 bool
 select(int *x, int *y, int *w, int *h)
 {
-	int names = { XC_cross, XC_ur_angle, XC_ul_angle,
+	const int names[] = { XC_cross, XC_ur_angle, XC_ul_angle,
 			XC_lr_angle, XC_ll_angle };
 	for (int i = 0; i < 5; ++i)
 		cursor[i] = XCreateFontCursor(dpy, names[i]);
