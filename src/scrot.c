@@ -372,15 +372,44 @@ void
 geom(Window target, int *x, int *y, int *w, int *h)
 {
 	if (target != root) {
-		if (find
 	}
 }
 
 int
 main(int argc, char **argv)
 {
-	optionsParse(argc, argv);
-	if ((dpy = XOpenDisplay(opt.dpy)) == NULL)
+	typedef enum select {
+		Select; All; Monitor; Window; Constant;
+	} select_t;
+	struct opt {
+		int x, y, w, h;
+		select_t select;
+		bool cursor, freeze;
+	} opt = { 0 };
+	for (argv = &argv[1]; *argv != NULL; argv = &argv[1]) {
+		if ((*argv)[0] != '-')
+			die("sr: invalid argument: %s\n", *argv);
+		switch ((*argv)[0]) {
+		case 'a': opt.select = All; break;
+		case 'c': opt.cursor = true; break;
+		case 'f': opt.freeze = true; break;
+		case 'i':
+			opt.select = Constant;
+			char *start = *(argv = &argv[1]), end;
+			for (int i = 0; i < 4; ++i, start = end + 1) {
+				if ((end = strchr(start, ',')) == NULL ||
+						!isdigit(start[0]))
+					die("sr: invalid option: %s\n", *argv);
+				*end = '\0', *((&opt.x)[i]) = atoi(start);
+			}
+			break;
+		case 'm': opt.select = Monitor; break;
+		case 's': opt.select = Select; break;
+		case 'w': opt.window = Window; break;
+		}
+	}
+
+	if ((dpy = XOpenDisplay(NULL)) == NULL)
 		die("sr: unable to open display\n");
 	atexit(dest);
 
@@ -395,27 +424,38 @@ main(int argc, char **argv)
 	imlib_context_set_color_modifier(NULL);
 	imlib_context_set_operation(IMLIB_OP_COPY);
 
+	if (opt.freeze)
+		XGrabServer(dpy);
+
 	Imlib_Image image;
-	if (opt.asel) {
+	if (opt.select == Constant) {
 		clip(&opt.x, &opt.y, &opt.w, &opt.h);
-	} else if (opt.select) {
-		if (!select(&opt.x, &opt.y, &opt.w, &opt.h))
-			goto focus;
-	} else if (opt.focus) {
-focus:
-		Window target = 0; int ignore;
-		XGetInputFocus(dpy, &target, &ignore);
-		if (!geom(target, &opt.x, &opt.y, &opt.w, &opt.h))
-			die("sr: unable to get window\n");
-		clip(&opt.x, &opt.y, &opt.w, &opt.h);
+	} else if (opt.Select == All) {
+		opt.w = scr->width, opt.h = scr->height;
 	} else {
-		opt.x = opt.y = 0, opt.w = scr->width, opt.h = scr->height;
+		if (opt.select == Select)
+			if (select(&opt.x, &opt.y, &opt.w, &opt.h))
+				goto out;
+
+		if (opt.select == Monitor) {
+
+		} else {
+			Window target = 0;
+			XGetInputFocus(dpy, &target, &(int){ });
+			if (!geom(target, &opt.x, &opt.y, &opt.w, &opt.h))
+				die("sr: unable to get window\n");
+		}
+out:
+		clip(&opt.x, &opt.y, &opt.w, &opt.h);
 	}
 	image = imlib_create_image_from_drawable(0, x, y, w, h, true);
 	if (opt.ptr)
 		mouse(image, x, y);
 	if (image == NULL)
 		die("sr: unable to grab image\n");
+
+	if (opt.freeze)
+		XUngrabServer(dpy);
 
 	Imlib_Load_Error ret;
 	imlib_context_set_image(image);
