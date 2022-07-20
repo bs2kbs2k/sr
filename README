@@ -1,0 +1,18 @@
+sr - screenshot utility
+=======================
+sr is a quick and tiny screenshot utility for X.
+
+Requirements
+------------
+sr requires Xlib and imlib2 to build.
+
+Installation
+------------
+sr comes with a Makefile and config.mk file for configurable building and
+testing.  Edit the latter to match your local setup (sr is installed into the
+/usr/local namespace by default, you may need to modify your $PATH).
+
+sr can be built and installed with the following command (run as root).
+
+    make clean install
+

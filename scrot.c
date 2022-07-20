@@ -393,8 +393,7 @@ main(int argc, char **argv)
 		case 'a': opt.select = All; break;
 		case 'c': opt.cursor = true; break;
 		case 'f': opt.freeze = true; break;
-		case 'i':
-			opt.select = Constant;
+		case 'i': opt.select = Constant;
 			char *start = *(argv = &argv[1]), end;
 			for (int i = 0; i < 4; ++i, start = end + 1) {
 				if ((end = strchr(start, ',')) == NULL ||

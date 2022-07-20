@@ -1,0 +1,41 @@
+MIT/X Consortium License
+
+(C) 1999-2000 Tom Gilbert <gilbertt@linuxbrit.co.uk>
+(C) 2009 James Cameron <quozl@us.netrek.org>
+(C) 2010 Ibragimov Rinat <ibragimovrinat@mail.ru>
+(C) 2017 Stoney Sauce <stoneysauce@gmail.com>
+(C) 2019-2022 Daniel T. Borelli <danieltborelli@gmail.com>
+(C) 2019 Jade Auer <jade@trashwitch.dev>
+(C) 2019 Joao Eriberto Mota Filho <eriberto@eriberto.pro.br>
+(C) 2020 blockparole
+(C) 2020 Cungsten Tarbide <ctarbide@tuta.io>
+(C) 2020 Hinigatsu <hinigatsu@protonmail.com>
+(C) 2020 nothub
+(C) 2020 Sean Brennan <zettix1@gmail.com>
+(C) 2020 Jeroen Roovers <jer@gentoo.org>
+(C) 2021 c0dev0id <sh+github@codevoid.de>
+(C) 2021 Christopher R. Nelson <christopher.nelson@languidnights.com>
+(C) 2021-2022 Guilherme Janczak <guilherme.janczak@yandex.com>
+(C) 2021 IFo Hancroft <contact@ifohancroft.com>
+(C) 2021 Martin C <martincation@protonmail.com>
+(C) 2021 Peter Wu <peterwu@hotmail.com>
+(C) 2021 Wilson Smith <01wsmith+gh@gmail.com>
+(C) 2022 ArcNyxx <fearlessdoggo21@vivaldi.net>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is furnished to do
+so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

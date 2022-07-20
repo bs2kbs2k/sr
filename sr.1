@@ -1,0 +1,68 @@
+.\" sr - screenshot utility
+.\" Copyright (C) 2022 ArcNyxx
+.\" see LICENCE file for licensing information
+.TH SR 1 sr\-VERSION
+.SH NAME
+sr \- screenshot utility
+.SH SYNOPSIS
+.SY sr
+.OP \-a
+.OP \-c
+.OP \-f
+.OP \-i coord
+.OP \-m
+.OP \-s
+.OP \-w
+.YS
+.SH DESCRIPTION
+.BR sr (1)
+is a simple screenshot utility for
+.BR X (7).
+.BR sr (1)
+can take screenshots of the display, an
+.BR Xinerama (3)
+monitor, a window, or a selection of the display.
+.BR sr (1)
+outputs the selected portion as PNG data on stdout.
+.SH OPTIONS
+.TP
+.B \-a
+Select the entire display.
+.TP
+.B \-c
+Draw the cursor in the screenshot.
+.TP
+.B \-f
+Freeze the screen while
+.BR sr (1)
+is running.
+.TP
+.BI \-i\  coord
+.I coord
+specifies the selection coordinates.  It must be formatted in the following
+manner:
+.RI ' x , y , width , height '.
+.TP
+.B \-m
+Select the focused
+.I Xinerama (3)
+monitor.  If
+.B \-s
+is specified, the monitor will be selected with the cursor.
+.TP
+.B \-s
+Select a portion of the display.
+.TP
+.B \-w
+Select the focused window.  If
+.B \-s
+is specified, the window will be selected with the cursor.
+.SH EXIT STATUS
+.BR sr (1)
+returns with 0 when it writes PNG data and with 1 on failure.
+.SH AUTHOR
+Written by ArcNyxx and
+.BR scrot (1)
+contributors.
+.SH SEE ALSO
+.BR scrot (1)

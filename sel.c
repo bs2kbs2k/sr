@@ -123,7 +123,7 @@ select(int *x, int *y, int *w, int *h)
 	if (kb != GrabSuccess)
 		die("sr: unable to grab keyboard\n");
 
-	
+
 
 
 	XSelectInput(dpy, draw, StructureNotifyMask);
