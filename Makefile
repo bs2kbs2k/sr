@@ -6,8 +6,8 @@
 
 include config.mk
 
-SRC = sr.c util.c
-HEAD = util.h
+SRC = sr.c
+HEAD =
 OBJ = $(SRC:.c=.o)
 
 all: sr

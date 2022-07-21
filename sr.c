@@ -3,7 +3,9 @@
  * see LICENCE file for licensing information */
 
 #include <ctype.h>
+#include <stdarg.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -11,13 +13,26 @@
 #include <X11/Xlib.h>
 #include <X11/extensions/Xfixes.h>
 
-#include "util.h"
-
 #define OPTION(key, value) case key: value = true
+
+static void die(const char *fmt, ...);
 
 Display *dpy;
 Visual *vis;
 Window root;
+
+void
+die(const char *fmt, ...)
+{
+	va_list list;
+	va_start(list, fmt);
+	vfprintf(stderr, fmt, list);
+	va_end(list);
+
+	if (fmt[strlen(fmt) - 1] != '\n')
+		perror(NULL);
+	exit(1);
+}
 
 int
 main(int argc, char **argv)
@@ -65,7 +80,6 @@ main(int argc, char **argv)
 
 	if (opt.freeze)
 		XGrabServer(dpy);
-
 	if (opt.all) {
 		opt.x = opt.y = 0, opt.w = scr->width, opt.h = scr->height;
 	} else {
@@ -104,6 +118,7 @@ out:
 		if ((opt.y + opt.h) > scr->height)
 			opt.h = scr->height - opt.y;
 	}
+
 	Imlib_Image image = imlib_create_image_from_drawable(0,
 			opt.x, opt.y, opt.w, opt.h, true);
 	if (image == NULL)
@@ -111,15 +126,15 @@ out:
 	if (opt.cursor) {
 		XFixesCursorImage *cur;
 		if ((cur = XFixesGetCursorImage(dpy)) == NULL)
-		        die("sr: unable to get cursor image\n");
+			die("sr: unable to get cursor image\n");
 
 		Imlib_Image img;
 		DATA32 data[cur->width * cur->height];
 		for (int i = 0; i < (cur->width * cur->height); ++i)
-		        data[i] = cur->pixels[i];
+			data[i] = cur->pixels[i];
 		if ((img = imlib_create_image_using_data(cur->width,
-		                cur->height, data)) == NULL)
-		        die("sr: unable to create cursor image\n");
+				cur->height, data)) == NULL)
+			die("sr: unable to create cursor image\n");
 		XFree(cur);
 
 		imlib_context_set_image(img);
