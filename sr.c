@@ -2,8 +2,14 @@
  * Copyright (C) 2022 ArcNyxx
  * see LICENCE file for licensing information */
 
+#include <ctype.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include <Imlib2.h>
 #include <X11/Xlib.h>
+#include <X11/extensions/Xfixes.h>
 
 #include "util.h"
 
@@ -11,11 +17,13 @@ Display *dpy;
 Visual *vis;
 Window root;
 
+#include <stdio.h>
+
 int
 main(int argc, char **argv)
 {
 	typedef enum select {
-		Select; All; Monitor; Window; Constant;
+		Select, All, Monitor, Window, Constant
 	} select_t;
 	struct opt {
 		int x, y, w, h;
@@ -25,22 +33,23 @@ main(int argc, char **argv)
 	for (argv = &argv[1]; *argv != NULL; argv = &argv[1]) {
 		if ((*argv)[0] != '-')
 			die("sr: invalid argument: %s\n", *argv);
-		switch ((*argv)[0]) {
+		switch ((*argv)[1]) {
 		case 'a': opt.select = All; break;
 		case 'c': opt.cursor = true; break;
 		case 'f': opt.freeze = true; break;
 		case 'i': opt.select = Constant;
-			char *start = *(argv = &argv[1]), end;
-			for (int i = 0; i < 4; ++i, start = end + 1) {
-				if ((end = strchr(start, ',')) == NULL ||
+			char *start = *(argv = &argv[1]), *end;
+			for (int i = 0; i < 4; ++i, start = ++end) {
+				if ((end = strchr(start, '.')) == NULL ||
 						!isdigit(start[0]))
 					die("sr: invalid option: %s\n", *argv);
-				*end = '\0', *((&opt.x)[i]) = atoi(start);
+				*(&opt.x + i) = atoi(start);
 			}
 			break;
 		case 'm': opt.select = Monitor; break;
 		case 's': opt.select = Select; break;
-		case 'w': opt.window = Window; break;
+		case 'w': opt.select = Window; break;
+		default: break;
 		}
 	}
 	if ((dpy = XOpenDisplay(NULL)) == NULL)
@@ -62,16 +71,16 @@ main(int argc, char **argv)
 
 	Imlib_Image image;
 	if (opt.select == All) {
-		opt.w = scr->width, opt.h = scr->height;
+		opt.x = opt.y = 0, opt.w = scr->width, opt.h = scr->height;
 	} else {
 		if (opt.select == Constant)
 			goto out;
-		if (opt.select == Select)
+	/*	if (opt.select == Select)
 			if (select(&opt.x, &opt.y, &opt.w, &opt.h))
 				goto out;
 
 		if (opt.select == Monitor) {
-			opt.w = opt.h = 1; /* TODO */
+			opt.w = opt.h = 1; /* TODO */ /*
 		} else {
 			Window target = 0;
 			XGetInputFocus(dpy, &target, &(int){ });
@@ -86,9 +95,9 @@ main(int argc, char **argv)
 
 			const int bw = attrs.border_width;
 			if (bw > 0)
-				opt.w += bw*2, opt.h += bw*2,
-						opt.x -= bw, opt.y -= bw;
-		}
+				opt.w += bw * 2, opt.h += bw * 2, opt.x -= bw,
+					opt.y -= bw;
+		} */
 out:
 		if (opt.x < 0)
 			opt.w += opt.x, opt.x = 0;
@@ -99,10 +108,11 @@ out:
 		if ((opt.y + opt.h) > scr->height)
 			opt.h = scr->height - opt.y;
 	}
-	image = imlib_create_image_from_drawable(0, x, y, w, h, true);
+	image = imlib_create_image_from_drawable(0,
+			opt.x, opt.y, opt.w, opt.h, true);
 	if (image == NULL)
 		die("sr: unable to grab image\n");
-	if (opt.ptr) {
+	if (opt.cursor) {
 		XFixesCursorImage *cur;
 		if ((cur = XFixesGetCursorImage(dpy)) == NULL)
 		        die("sr: unable to get cursor image\n");
@@ -117,8 +127,8 @@ out:
 		        die("sr: unable to create cursor image\n");
 		XFree(cur);
 
-		imlib_blend_image_onto_image(img, 0, 0, 0, cur->width,
-				cur->height, x, y, cur->width, cur->height);
+		imlib_blend_image_onto_image(img, 0, 0, 0, cur->width, cur->
+				height, opt.x, opt.y, cur->width, cur->height);
 		imlib_context_set_image(img);
 		imlib_free_image();
 	}
