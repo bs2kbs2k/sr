@@ -13,31 +13,28 @@
 
 #include "util.h"
 
+#define OPTION(key, value) case key: value = true
+
 Display *dpy;
 Visual *vis;
 Window root;
 
-#include <stdio.h>
-
 int
 main(int argc, char **argv)
 {
-	typedef enum select {
-		Select, All, Monitor, Window, Constant
-	} select_t;
-	struct opt {
+	struct {
 		int x, y, w, h;
-		select_t select;
 		bool cursor, freeze;
+		bool all, constant, monitor, window, select;
 	} opt = { 0 };
 	for (argv = &argv[1]; *argv != NULL; argv = &argv[1]) {
 		if ((*argv)[0] != '-')
 			die("sr: invalid argument: %s\n", *argv);
 		switch ((*argv)[1]) {
-		case 'a': opt.select = All; break;
-		case 'c': opt.cursor = true; break;
-		case 'f': opt.freeze = true; break;
-		case 'i': opt.select = Constant;
+		OPTION('a', opt.all     ); break;
+		OPTION('c', opt.cursor  ); break;
+		OPTION('f', opt.freeze  ); break;
+		OPTION('i', opt.constant);
 			char *start = *(argv = &argv[1]), *end;
 			for (int i = 0; i < 4; ++i, start = ++end) {
 				if ((end = strchr(start, '.')) == NULL ||
@@ -46,9 +43,9 @@ main(int argc, char **argv)
 				*(&opt.x + i) = atoi(start);
 			}
 			break;
-		case 'm': opt.select = Monitor; break;
-		case 's': opt.select = Select; break;
-		case 'w': opt.select = Window; break;
+		OPTION('m', opt.monitor ); break;
+		OPTION('s', opt.select  ); break;
+		OPTION('w', opt.window  ); break;
 		default: break;
 		}
 	}
@@ -69,10 +66,10 @@ main(int argc, char **argv)
 	if (opt.freeze)
 		XGrabServer(dpy);
 
-	if (opt.select == All) {
+	if (opt.all) {
 		opt.x = opt.y = 0, opt.w = scr->width, opt.h = scr->height;
 	} else {
-		if (opt.select == Constant)
+		if (opt.constant)
 			goto out;
 	/*	if (opt.select == Select)
 			if (select(&opt.x, &opt.y, &opt.w, &opt.h))
@@ -116,13 +113,12 @@ out:
 		if ((cur = XFixesGetCursorImage(dpy)) == NULL)
 		        die("sr: unable to get cursor image\n");
 
-		int data[cur->width * cur->height * sizeof(int)];
+		Imlib_Image img;
+		DATA32 data[cur->width * cur->height];
 		for (int i = 0; i < (cur->width * cur->height); ++i)
 		        data[i] = cur->pixels[i];
-
-		Imlib_Image img = imlib_create_image_using_data(cur->width,
-		                cur->height, data);
-		if (img == NULL)
+		if ((img = imlib_create_image_using_data(cur->width,
+		                cur->height, data)) == NULL)
 		        die("sr: unable to create cursor image\n");
 		XFree(cur);
 
@@ -141,7 +137,6 @@ out:
 	Imlib_Load_Error ret;
 	imlib_context_set_image(image);
 	imlib_image_set_format("png");
-	imlib_image_attach_data_value("quality", NULL, 100, NULL);
 	imlib_save_image_with_error_return("/dev/stdout", &ret);
 	imlib_free_image_and_decache();
 
