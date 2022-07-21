@@ -69,7 +69,6 @@ main(int argc, char **argv)
 	if (opt.freeze)
 		XGrabServer(dpy);
 
-	Imlib_Image image;
 	if (opt.select == All) {
 		opt.x = opt.y = 0, opt.w = scr->width, opt.h = scr->height;
 	} else {
@@ -108,7 +107,7 @@ out:
 		if ((opt.y + opt.h) > scr->height)
 			opt.h = scr->height - opt.y;
 	}
-	image = imlib_create_image_from_drawable(0,
+	Imlib_Image image = imlib_create_image_from_drawable(0,
 			opt.x, opt.y, opt.w, opt.h, true);
 	if (image == NULL)
 		die("sr: unable to grab image\n");
@@ -127,8 +126,12 @@ out:
 		        die("sr: unable to create cursor image\n");
 		XFree(cur);
 
+		imlib_context_set_image(img);
+		imlib_image_set_has_alpha(true);
+		imlib_context_set_image(image);
 		imlib_blend_image_onto_image(img, 0, 0, 0, cur->width, cur->
-				height, opt.x, opt.y, cur->width, cur->height);
+				height, cur->x - cur->xhot - opt.x, cur->y -
+				cur->yhot - opt.y, cur->width, cur->height);
 		imlib_context_set_image(img);
 		imlib_free_image();
 	}
