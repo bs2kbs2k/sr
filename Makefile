@@ -7,12 +7,11 @@
 include config.mk
 
 SRC = sr.c
-HEAD =
 OBJ = $(SRC:.c=.o)
 
 all: sr
 
-$(OBJ): $(HEAD) config.mk
+$(OBJ): config.mk
 
 .c.o:
 	$(CC) $(CFLAGS) -c $<

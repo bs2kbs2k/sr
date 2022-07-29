@@ -117,7 +117,8 @@ select(int *x, int *y, int *w, int *h)
 
 
 
-
+	XUngrabKeyboard(dpy, CurrentTime);
+	XUngrabPointer(dpy, CurrentTime);
 	XSelectInput(dpy, draw, StructureNotifyMask);
 	XUnmapWindow(dpy, draw);
 
