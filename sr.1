@@ -30,18 +30,18 @@ outputs the selected portion as PNG data on stdout.
 Select the entire display.
 .TP
 .B \-c
-Draw the cursor in the screenshot.
+Draw the cursor in the screenshot.  Enabled by default.
 .TP
 .B \-f
 Freeze the screen while
 .BR sr (1)
-is running.
+is running.  Disabled by default.
 .TP
 .BI \-i\  coord
 .I coord
 specifies the selection coordinates.  It must be formatted in the following
 manner:
-.RI ' x . y . width . height .'.
+.RI ' x , y , width , height '.
 .TP
 .B \-m
 Select the focused

@@ -18,20 +18,14 @@
 #include <X11/extensions/Xfixes.h>
 #include <X11/extensions/Xinerama.h>
 
-enum select {
-	SAll = 1,
-	SSel = 2,
-	SWin = 4,
-	SMon = 8
-};
-
-Display *dpy;
+Display *dpy = NULL;
 Screen  *scr;
 Window   root, draw;
 Cursor   cursor[5];
 
 static void die(const char *fmt, ...);
 static bool pick(int a[4]);
+static bool chke(Display *dpy, XEvent *evt, XPointer arg);
 
 static void
 die(const char *fmt, ...)
@@ -43,7 +37,9 @@ die(const char *fmt, ...)
 
 	if (fmt[strlen(fmt) - 1] != '\n')
 		perror(NULL);
-	XCloseDisplay(dpy);
+
+	if (dpy != NULL)
+		XCloseDisplay(dpy);
 	exit(1);
 }
 
@@ -62,7 +58,7 @@ pick(int a[4])
 
 	XSetWindowAttributes attrs = { .background_pixel = col.pixel,
 			.override_redirect = true };
-	XClassHint hint = { .res_name = "sr", .res_class = "sr" };
+	XClassHint hint = { (char []){ "sr" }, (char []){ "sr" } };
 
 	Atom wtyd = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DOCK", false),
 			wty = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE", false);
@@ -80,7 +76,7 @@ pick(int a[4])
 	for (int i = 0; i < 20 && (kb = XGrabKeyboard(dpy, root,
 			false, GrabModeAsync, GrabModeAsync,
 			CurrentTime)) == AlreadyGrabbed; ++i)
-		nanosleep(&(struct timespec){ .tv_nsec = 50000000 }, NULL);
+		nanosleep(&(struct timespec){ .tv_nsec = 5E8 }, NULL);
 	if (kb != GrabSuccess)
 		die("sr: unable to grab keyboard\n");
 
@@ -89,14 +85,14 @@ pick(int a[4])
 	while (!XNextEvent(dpy, &ev)) switch (ev.type) {
 	case ButtonPress:
 		press = true, a[0] = ev.xbutton.x, a[1] = ev.xbutton.y;
-		Window new, target = root;
+		Window new = 0, target = root;
 		int null;
 		while (XQueryPointer(dpy, target, &(Window){ 0 }, &new, &a[0],
-				&a[1], &null, &null, (unsigned int *)&null))
+				&a[1], &null, &null, (unsigned int *)&null) && new != 0)
 			target = new;
 		break;
 	case ButtonRelease:
-		goto done;
+		goto skip;
 	case KeyPress:
 		KeySym *keysym;
 		if ((keysym = XGetKeyboardMapping(dpy, ev.xkey.keycode, 1,
@@ -113,9 +109,8 @@ pick(int a[4])
 		else
 			die("sr: key pressed\n");
 		XFree(keysym);
-		goto next;
-	case MotionNotify: /* FALLTHROUGH */
-next:
+		/* FALLTHROUGH */
+	case MotionNotify:
 		if (!press)
 			break;
 
@@ -141,19 +136,34 @@ next:
 		XMapWindow(dpy, draw);
 	}
 
-done:
+skip:
 	XUngrabKeyboard(dpy, CurrentTime);
 	XUngrabPointer(dpy, CurrentTime);
 	XSelectInput(dpy, draw, StructureNotifyMask);
 	XUnmapWindow(dpy, draw);
+
+	for (int i = 0; i < 20; ++i) {
+		if (XCheckIfEvent(dpy, &ev, &chke, draw))
+			break;
+		nanosleep(&(struct timespec){ .tv_nsec = 5E8 }, NULL);
+	}
+	return true;
+}
+
+static bool
+chke(Display *dpy, XEvent *evt, XPointer arg)
+{
+	return evt->type == UnmapNotify && evt->xunmap.window == arg;
 }
 
 int
 main(int argc, char **argv)
 {
+	enum select { SAll = 1, SSel = 2, SWin = 4, SMon = 8 };
+
 	int   a[4] = { 0 };
 	char *optsel = NULL;
-	enum  select act = SSel | SWin;
+	enum  select act = SAll;
 	bool  optcur = true, optfre = false;
 
 	for (argv = &argv[1]; *argv != NULL; argv = &argv[1]) {
@@ -190,19 +200,18 @@ main(int argc, char **argv)
 		XGrabServer(dpy);
 	if (act & SAll) {
 		a[2] = scr->width, a[3] = scr->height;
-		goto noclip;
 	} else if (optsel != NULL) {
 		char *start = optsel, *end;
 		for (int i = 0; i < 4; ++i, start = ++end) {
 			for (end = start; isdigit(*end); ++end);
-			if ((i != 4 && *end != ',') || (i == 4 && *end !=
+			if ((i < 3 && *end != ',') || (i == 3 && *end !=
 					'\0') || !isdigit(start[0]))
 				die("sr: invalid option: %s\n", optsel);
 			a[i] = atoi(start);
 		}
 	} else {
 		if (act & SSel && pick(a))
-			goto clip;
+			goto skip;
 
 		if (act & SMon) {
 			if (act & SSel)
@@ -251,13 +260,12 @@ main(int argc, char **argv)
 		}
 	}
 
-clip:
+skip:
 	if (a[0] < 0) a[2] += a[0], a[0] = 0;
 	if (a[1] < 0) a[3] += a[1], a[1] = 0;
 	a[2] = (a[0] + a[2]) <= scr->width  ? a[2] : scr->width;
 	a[3] = (a[1] + a[3]) <= scr->height ? a[3] : scr->height;
 
-noclip:
 	Imlib_Image image;
 	if ((image = imlib_create_image_from_drawable(0,
 			a[0], a[1], a[2], a[3], true)) == NULL)
@@ -295,5 +303,6 @@ noclip:
 	imlib_free_image_and_decache();
 
 	XCloseDisplay(dpy);
-	return ret != 0;
+	if (ret != 0)
+		die("sr: unable to write png data\n");
 }
