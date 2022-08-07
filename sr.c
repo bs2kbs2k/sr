@@ -20,12 +20,11 @@
 
 Display *dpy = NULL;
 Screen  *scr;
-Window   root, draw;
-Cursor   cursor[5];
+Window   root;
 
 static void die(const char *fmt, ...);
 static bool pick(int a[4]);
-static bool chke(Display *dpy, XEvent *evt, XPointer arg);
+static int chke(Display *ndpy, XEvent *evt, XPointer arg);
 
 static void
 die(const char *fmt, ...)
@@ -46,6 +45,7 @@ die(const char *fmt, ...)
 static bool
 pick(int a[4])
 {
+	Cursor cursor[5];
 	const int names[] = { XC_cross, XC_ur_angle, XC_ul_angle,
 			XC_lr_angle, XC_ll_angle };
 	for (int i = 0; i < 5; ++i)
@@ -62,7 +62,7 @@ pick(int a[4])
 
 	Atom wtyd = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DOCK", false),
 			wty = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE", false);
-	draw = XCreateWindow(dpy, root, 0, 0, scr->width, scr->height, 0,
+	Window draw = XCreateWindow(dpy, root, 0, 0, scr->width, scr->height, 0,
 			CopyFromParent, InputOutput, CopyFromParent,
 			CWBackPixel | CWOverrideRedirect, &attrs);
 	XChangeProperty(dpy, draw, wty, XA_ATOM, 32, PropModeReplace,
@@ -76,7 +76,7 @@ pick(int a[4])
 	for (int i = 0; i < 20 && (kb = XGrabKeyboard(dpy, root,
 			false, GrabModeAsync, GrabModeAsync,
 			CurrentTime)) == AlreadyGrabbed; ++i)
-		nanosleep(&(struct timespec){ .tv_nsec = 5E8 }, NULL);
+		nanosleep(&(struct timespec){ .tv_nsec = 2E7 }, NULL);
 	if (kb != GrabSuccess)
 		die("sr: unable to grab keyboard\n");
 
@@ -143,17 +143,17 @@ skip:
 	XUnmapWindow(dpy, draw);
 
 	for (int i = 0; i < 20; ++i) {
-		if (XCheckIfEvent(dpy, &ev, &chke, draw))
+		if (XCheckIfEvent(dpy, &ev, &chke, (XPointer)&draw))
 			break;
-		nanosleep(&(struct timespec){ .tv_nsec = 5E8 }, NULL);
+		nanosleep(&(struct timespec){ .tv_nsec = 2E7 }, NULL);
 	}
 	return true;
 }
 
-static bool
-chke(Display *dpy, XEvent *evt, XPointer arg)
+static int
+chke(Display *ndpy, XEvent *evt, XPointer arg)
 {
-	return evt->type == UnmapNotify && evt->xunmap.window == arg;
+	return evt->type == UnmapNotify && evt->xunmap.window == *(Window *)arg;
 }
 
 int
