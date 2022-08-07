@@ -23,7 +23,8 @@ Screen *scr;
 Window root;
 
 static void die(const char *fmt, ...);
-static bool pick(int a[4]);
+static void pick(int *x, int *y, int *w, int *h);
+static void drive(int *x, int *y, int *w, int *h, int opt);
 
 static void
 die(const char *fmt, ...)
@@ -40,8 +41,8 @@ die(const char *fmt, ...)
 	exit(1);
 }
 
-static bool
-pick(int a[4])
+static void
+pick(int *x, int *y, int *w, int *h)
 {
 	Cursor cursor[5];
 	static const int names[5] = { XC_cross, XC_ur_angle,
@@ -56,16 +57,15 @@ pick(int a[4])
 
 	XSetWindowAttributes attrs = { .background_pixel = col.pixel,
 			.override_redirect = true };
-	XClassHint hint = { (char []){ "sr" }, (char []){ "sr" } };
-
-	Atom wtyd = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DOCK", false),
-			wty = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE", false);
 	Window draw = XCreateWindow(dpy, root, 0, 0, scr->width, scr->height, 0,
 			CopyFromParent, InputOutput, CopyFromParent,
 			CWBackPixel | CWOverrideRedirect, &attrs);
-	XChangeProperty(dpy, draw, wty, XA_ATOM, 32, PropModeReplace,
-			(unsigned char *)&wtyd, 1);
-	XSetClassHint(dpy, draw, &hint);
+	Atom atom = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DOCK", false);
+	XChangeProperty(dpy, draw, XInternAtom(dpy, "_NET_WM_WINDOW_TYPE",
+			false), XA_ATOM, 32, PropModeReplace,
+			(unsigned char *)&atom, 1);
+	XSetClassHint(dpy, draw, &(XClassHint){
+			(char []){ "sr" }, (char []){ "sr" } });
 
 #define MASK ButtonMotionMask | ButtonPressMask | ButtonReleaseMask
 	if (XGrabPointer(dpy, root, false, MASK, GrabModeAsync, GrabModeAsync,
@@ -75,32 +75,27 @@ pick(int a[4])
 			CurrentTime) != GrabSuccess)
 		die("sr: unable to grab keyboard\n");
 
-	XEvent  ev;
-	bool    press;
-	while (!XNextEvent(dpy, &ev)) switch (ev.type) {
+	XEvent evt; bool press;
+	while (!XNextEvent(dpy, &evt)) switch (evt.type) {
 	case ButtonPress:
-		press = true, a[0] = ev.xbutton.x, a[1] = ev.xbutton.y;
-		Window new = 0, target = root;
-		int null;
-		while (XQueryPointer(dpy, target, &(Window){ 0 }, &new, &a[0],
-				&a[1], &null, &null, (unsigned int *)&null) && new != 0)
-			target = new;
+		press = true, *x = evt.xbutton.x, *y = evt.xbutton.y;
 		break;
 	case ButtonRelease:
-		goto skip;
+		goto done;
 	case KeyPress: ;
+		/* TODO: rearrange coords when negative w or h */
 		KeySym *keysym;
-		if ((keysym = XGetKeyboardMapping(dpy, ev.xkey.keycode, 1,
+		if ((keysym = XGetKeyboardMapping(dpy, evt.xkey.keycode, 1,
 				&(int){ 0 })) == NULL)
 			break;
 		if (*keysym == XK_Right)
-			a[0] = ++a[0] <= scr->width ? a[0] : scr->width;
+			*x = ++*x <= scr->width ? *x : scr->width;
 		else if (*keysym == XK_Left)
-			a[0] = --a[0] >= 0 ? a[0] : 0;
+			*x = --*x >= 0 ? *x : 0;
 		else if (*keysym == XK_Up)
-			a[1] = ++a[1] <= scr->width ? a[1] : scr->width;
+			*y = ++*y <= scr->width ? *y : scr->width;
 		else if (*keysym == XK_Down)
-			a[1] = --a[1] >= 0 ? a[1] : 0;
+			*y = --*y >= 0 ? *y : 0;
 		else
 			die("sr: key pressed\n");
 		XFree(keysym);
@@ -110,47 +105,94 @@ pick(int a[4])
 			break;
 
 		Cursor cur;
-		if (a[0] < ev.xbutton.x && a[1] < ev.xbutton.y)
+		if (*x < evt.xbutton.x && *y < evt.xbutton.y)
 			cur = cursor[3];
-		else if (a[0] < ev.xbutton.x)
+		else if (*x < evt.xbutton.x)
 			cur = cursor[1];
-		else if (a[1] < ev.xbutton.y)
+		else if (*y < evt.xbutton.y)
 			cur = cursor[4];
 		else
 			cur = cursor[2];
 		XChangeActivePointerGrab(dpy, ButtonMotionMask |
 				ButtonReleaseMask, cur, CurrentTime);
 
-		if (ev.type == MotionNotify)
-			a[2] = ev.xbutton.x - a[0], a[3] = ev.xbutton.y - a[1];
-		XRectangle ln[4] = { { a[0], a[1], 1, a[3] }, { a[0] + a[2],
-				a[1], 1, a[3] }, { a[0], a[1], a[2], 1 },
-				{ a[0], a[1] + a[3], a[2], 1 } };
+		if (evt.type == MotionNotify)
+			*w = evt.xbutton.x - *x, *h = evt.xbutton.y - *y;
+		XRectangle ln[4] = { { *x, *y, 1, *h }, { *x + *w, *y, 1, *h },
+				{ *x, *y, *w, 1 }, { *x, *y + *h, *w, 1 } };
 		XShapeCombineRectangles(dpy, draw, ShapeBounding, 0, 0, ln, 4,
 				ShapeSet, 0);
 		XMapWindow(dpy, draw);
 	}
 
-skip:
+done:
 	XUngrabKeyboard(dpy, CurrentTime);
 	XUngrabPointer(dpy, CurrentTime);
 	XSelectInput(dpy, draw, StructureNotifyMask);
 	XUnmapWindow(dpy, draw);
 
-	do XNextEvent(dpy, &ev);
-	while (ev.type != UnmapNotify && ev.xunmap.window != draw);
-	return true;
+	do XNextEvent(dpy, &evt);
+	while (evt.type != UnmapNotify && evt.xunmap.window != draw); /* sleep */
+}
+
+static void
+drive(int *x, int *y, int *w, int *h, int opt)
+{
+	if ((opt & 2) != 0)
+		pick(x, y, w, h);
+	if (w != 0 && h != 0)
+		return;
+
+	if ((opt & 8) != 0) {
+		if ((opt & 2) != 0)
+			XQueryPointer(dpy, root, &(Window){ 0 },
+					&(Window){ 0 }, x, y, &(int){ 0 },
+					&(int){ 0 }, &(unsigned int){ 0 });
+
+		int num;
+		XineramaScreenInfo *si = XineramaQueryScreens(dpy, &num), *sel;
+		for (sel = si; sel != NULL; sel = &sel[1])
+			if (*x >= sel->x_org && *y >= sel->y_org &&
+					*x <= sel->x_org + sel->width &&
+					*y <= sel->y_org + sel->height)
+				break;
+		if (sel == NULL)
+			*x = *y = 0, *w = scr->width, *h = scr->height;
+		else
+			*x = sel->x_org, *y = sel->y_org, *w = sel->width,
+					*h = sel->height;
+		if (si != NULL)
+			XFree(si);
+		return;
+	}
+
+	Window target = root, new = 0;
+	if ((opt & 2) != 0)
+		while (XQueryPointer(dpy, target, &(Window){ 0 }, &new,
+				x, y, &(int){ 0 }, &(int){ 0 },
+				&(unsigned int){ 0 }) && new != 0)
+			target = new;
+	else
+		XGetInputFocus(dpy, &target, &(int){ 0 });
+
+	XWindowAttributes attrs;
+	if (!XGetWindowAttributes(dpy, target, &attrs) ||
+			attrs.map_state != IsViewable)
+		die("sr: unable to get window\n");
+	*w = attrs.width, *h = attrs.height;
+	XTranslateCoordinates(dpy, target, root, 0, 0, x, y, &(Window){ 0 });
+
+#define BW attrs.border_width
+	if (BW > 0)
+		*w += BW * 2, *h += BW * 2, *x -= BW, *y -= BW;
 }
 
 int
 main(int argc, char **argv)
 {
-	enum select { SAll = 1, SSel = 2, SWin = 4, SMon = 8 };
-
-	int   a[4] = { 0 };
+	int x = 0, y = 0, w = 0, h = 0, opt = 1;
 	char *optsel = NULL;
-	enum  select act = SAll;
-	bool  optcur = true, optfre = false;
+	bool optcur = true, optfre = false;
 
 	for (argv = &argv[1]; *argv != NULL; argv = &argv[1]) {
 		if ((*argv)[0] != '-')
@@ -159,12 +201,12 @@ main(int argc, char **argv)
 		case 'c': optcur = !optcur; break;
 		case 'f': optfre = !optfre; break;
 
-		case 'a': act = SAll; break;
+		case 'a': opt = 1; break;
 		case 'i': optsel = *(argv = &argv[1]); break;
 
-		case 's': act = (act & (SWin | SMon)) | SSel; break;
-		case 'm': act = (act & SSel) | SMon; break;
-		case 'w': act = (act & SSel) | SWin; break;
+		case 's': opt = (opt & (4 | 8)) | 2; break;
+		case 'm': opt = (opt & 2) | 8; break;
+		case 'w': opt = (opt & 2) | 4; break;
 		}
 	}
 
@@ -184,8 +226,8 @@ main(int argc, char **argv)
 
 	if (optfre)
 		XGrabServer(dpy);
-	if (act & SAll) {
-		a[2] = scr->width, a[3] = scr->height;
+	if ((opt & 1) != 0) {
+		w = scr->width, h = scr->height;
 	} else if (optsel != NULL) {
 		char *start = optsel, *end;
 		for (int i = 0; i < 4; ++i, start = ++end) {
@@ -193,60 +235,20 @@ main(int argc, char **argv)
 			if ((i < 3 && *end != ',') || (i == 3 && *end !=
 					'\0') || !isdigit(start[0]))
 				die("sr: invalid option: %s\n", optsel);
-			a[i] = atoi(start);
+			((int *)&x)[i] = atoi(start);
 		}
 	} else {
-		if (act & SSel && pick(a))
-			goto skip;
-
-		if (act & SMon) {
-			int num;
-			XineramaScreenInfo *si = XineramaQueryScreens(dpy,
-					&num), *sel;
-			for (sel = si; sel != NULL; sel = &sel[1])
-				if (
-					a[0] >= sel->x_org &&
-					a[0] <= sel->x_org + sel->width &&
-					a[1] >= sel->y_org &&
-					a[1] <= sel->y_org + sel->height
-				)
-					break;
-			if (sel == NULL)
-				a[0] = a[1] = 0, a[2] = scr->width,
-						a[3] = scr->height;
-			else
-				a[0] = sel->x_org, a[1] = sel->y_org,
-						a[2] = sel->width,
-						a[3] = sel->height;
-			if (si != NULL)
-				XFree(si);
-		} else if (!optfre) {
-			Window target = 0;
-			XGetInputFocus(dpy, &target, &(int){ 0 });
-
-			XWindowAttributes attrs;
-			if (!XGetWindowAttributes(dpy, target, &attrs) ||
-					attrs.map_state != IsViewable)
-				die("sr: unable to get window\n");
-			a[2] = attrs.width, a[3] = attrs.height;
-			XTranslateCoordinates(dpy, target, root, 0, 0,
-					&a[0], &a[1], &(Window){ 0 });
-
-#define BW attrs.border_width
-			if (BW > 0) a[2] += BW * 2, a[3] += BW * 2,
-				a[0] -= BW, a[1] -= BW;
-		}
+		drive(&x, &y, &w, &h, opt);
 	}
 
-skip:
-	if (a[0] < 0) a[2] += a[0], a[0] = 0;
-	if (a[1] < 0) a[3] += a[1], a[1] = 0;
-	a[2] = (a[0] + a[2]) <= scr->width  ? a[2] : scr->width;
-	a[3] = (a[1] + a[3]) <= scr->height ? a[3] : scr->height;
+	if (x < 0) w += x, x = 0;
+	if (y < 0) h += y, y = 0;
+	w = (x + w) <= scr->width  ? w : scr->width;
+	h = (y + h) <= scr->height ? h : scr->height;
 
 	Imlib_Image image;
 	if ((image = imlib_create_image_from_drawable(0,
-			a[0], a[1], a[2], a[3], true)) == NULL)
+			x, y, w, h, true)) == NULL)
 		die("sr: unable to grab image\n");
 	if (optcur) {
 		XFixesCursorImage *cur;
@@ -266,13 +268,12 @@ skip:
 		imlib_context_set_image(img);
 		imlib_image_set_has_alpha(true);
 		imlib_context_set_image(image);
-		imlib_blend_image_onto_image(img, 0, 0, 0, cur->width, cur->
-				height, cur->x - cur->xhot - a[0], cur->y -
-				cur->yhot - a[1], cur->width, cur->height);
+		imlib_blend_image_onto_image(img, 0, 0, 0, cur->width,
+				cur->height, cur->x - cur->xhot - x, cur->y -
+				cur->yhot - y, cur->width, cur->height);
 		imlib_context_set_image(img);
 		imlib_free_image();
-		free(data);
-		XFree(cur);
+		free(data); XFree(cur);
 	}
 	if (optfre)
 		XUngrabServer(dpy);
