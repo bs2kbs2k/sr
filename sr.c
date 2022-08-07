@@ -19,12 +19,11 @@
 #include <X11/extensions/Xinerama.h>
 
 Display *dpy = NULL;
-Screen  *scr;
-Window   root;
+Screen *scr;
+Window root;
 
 static void die(const char *fmt, ...);
 static bool pick(int a[4]);
-static int chke(Display *ndpy, XEvent *evt, XPointer arg);
 
 static void
 die(const char *fmt, ...)
@@ -36,7 +35,6 @@ die(const char *fmt, ...)
 
 	if (fmt[strlen(fmt) - 1] != '\n')
 		perror(NULL);
-
 	if (dpy != NULL)
 		XCloseDisplay(dpy);
 	exit(1);
@@ -46,8 +44,8 @@ static bool
 pick(int a[4])
 {
 	Cursor cursor[5];
-	const int names[] = { XC_cross, XC_ur_angle, XC_ul_angle,
-			XC_lr_angle, XC_ll_angle };
+	static const int names[5] = { XC_cross, XC_ur_angle,
+			XC_ul_angle, XC_lr_angle, XC_ll_angle };
 	for (int i = 0; i < 5; ++i)
 		cursor[i] = XCreateFontCursor(dpy, names[i]);
 
@@ -69,15 +67,12 @@ pick(int a[4])
 			(unsigned char *)&wtyd, 1);
 	XSetClassHint(dpy, draw, &hint);
 
-	int mask = ButtonMotionMask | ButtonPressMask | ButtonReleaseMask, kb;
-	if (XGrabPointer(dpy, root, false, mask, GrabModeAsync, GrabModeAsync,
-				root, cursor[0], CurrentTime) != GrabSuccess)
+#define MASK ButtonMotionMask | ButtonPressMask | ButtonReleaseMask
+	if (XGrabPointer(dpy, root, false, MASK, GrabModeAsync, GrabModeAsync,
+			root, cursor[0], CurrentTime) != GrabSuccess)
 		die("sr: unable to grab cursor\n");
-	for (int i = 0; i < 20 && (kb = XGrabKeyboard(dpy, root,
-			false, GrabModeAsync, GrabModeAsync,
-			CurrentTime)) == AlreadyGrabbed; ++i)
-		nanosleep(&(struct timespec){ .tv_nsec = 2E7 }, NULL);
-	if (kb != GrabSuccess)
+	if (XGrabKeyboard(dpy, root, false, GrabModeAsync, GrabModeAsync,
+			CurrentTime) != GrabSuccess)
 		die("sr: unable to grab keyboard\n");
 
 	XEvent  ev;
@@ -142,18 +137,9 @@ skip:
 	XSelectInput(dpy, draw, StructureNotifyMask);
 	XUnmapWindow(dpy, draw);
 
-	for (int i = 0; i < 20; ++i) {
-		if (XCheckIfEvent(dpy, &ev, &chke, (XPointer)&draw))
-			break;
-		nanosleep(&(struct timespec){ .tv_nsec = 2E7 }, NULL);
-	}
+	do XNextEvent(dpy, &ev);
+	while (ev.type != UnmapNotify && ev.xunmap.window != draw);
 	return true;
-}
-
-static int
-chke(Display *ndpy, XEvent *evt, XPointer arg)
-{
-	return evt->type == UnmapNotify && evt->xunmap.window == *(Window *)arg;
 }
 
 int
@@ -214,12 +200,6 @@ main(int argc, char **argv)
 			goto skip;
 
 		if (act & SMon) {
-			if (act & SSel)
-				XQueryPointer(dpy, root, &(Window){ 0 },
-						&(Window){ 0 }, &a[0], &a[1],
-						&(int){ 0 }, &(int){ 0 },
-						&(unsigned int){ 0 });
-
 			int num;
 			XineramaScreenInfo *si = XineramaQueryScreens(dpy,
 					&num), *sel;
@@ -255,8 +235,6 @@ main(int argc, char **argv)
 #define BW attrs.border_width
 			if (BW > 0) a[2] += BW * 2, a[3] += BW * 2,
 				a[0] -= BW, a[1] -= BW;
-		} else {
-			// TODO
 		}
 	}
 
@@ -275,8 +253,10 @@ skip:
 		if ((cur = XFixesGetCursorImage(dpy)) == NULL)
 			die("sr: unable to get cursor image\n");
 
+		DATA32 *data;
 		Imlib_Image img;
-		DATA32 data[cur->width * cur->height];
+		if ((data = malloc(cur->width * cur->height * 4)) == NULL)
+			die("sr: unable to allocate memory: ");
 		for (int i = 0; i < cur->width * cur->height; ++i)
 			data[i] = cur->pixels[i];
 		if ((img = imlib_create_image_using_data(cur->width,
@@ -291,6 +271,7 @@ skip:
 				cur->yhot - a[1], cur->width, cur->height);
 		imlib_context_set_image(img);
 		imlib_free_image();
+		free(data);
 		XFree(cur);
 	}
 	if (optfre)
@@ -302,7 +283,7 @@ skip:
 	imlib_save_image_with_error_return("/dev/stdout", &ret);
 	imlib_free_image_and_decache();
 
-	XCloseDisplay(dpy);
 	if (ret != 0)
 		die("sr: unable to write png data\n");
+	XCloseDisplay(dpy);
 }
