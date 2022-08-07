@@ -93,7 +93,7 @@ pick(int a[4])
 		break;
 	case ButtonRelease:
 		goto skip;
-	case KeyPress:
+	case KeyPress: ;
 		KeySym *keysym;
 		if ((keysym = XGetKeyboardMapping(dpy, ev.xkey.keycode, 1,
 				&(int){ 0 })) == NULL)
