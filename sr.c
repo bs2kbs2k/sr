@@ -131,8 +131,9 @@ done:
 	XSelectInput(dpy, draw, StructureNotifyMask);
 	XUnmapWindow(dpy, draw);
 
-	do XNextEvent(dpy, &evt);
-	while (evt.type != UnmapNotify && evt.xunmap.window != draw); /* sleep */
+	if (*w != 0 || *h != 0)
+		do XNextEvent(dpy, &evt);
+		while (evt.type != UnmapNotify && evt.xunmap.window != draw);
 }
 
 static void
@@ -140,7 +141,7 @@ drive(int *x, int *y, int *w, int *h, int opt)
 {
 	if ((opt & 2) != 0)
 		pick(x, y, w, h);
-	if (w != 0 && h != 0)
+	if (*w != 0 && *h != 0)
 		return;
 
 	if ((opt & 8) != 0) {
