@@ -203,7 +203,7 @@ main(int argc, char **argv)
 		case 'f': optfre = !optfre; break;
 
 		case 'a': opt = 1; break;
-		case 'i': optsel = *(argv = &argv[1]); break;
+		case 'i': opt = 0, optsel = *(argv = &argv[1]); break;
 
 		case 's': opt = (opt & (4 | 8)) | 2; break;
 		case 'm': opt = (opt & 2) | 8; break;
@@ -231,21 +231,22 @@ main(int argc, char **argv)
 		w = scr->width, h = scr->height;
 	} else if (optsel != NULL) {
 		char *start = optsel, *end;
-		for (int i = 0; i < 4; ++i, start = ++end) {
-			for (end = start; isdigit(*end); ++end);
-			if ((i < 3 && *end != ',') || (i == 3 && *end !=
-					'\0') || !isdigit(start[0]))
+		for (int i = 0; i < 3; ++i, start = ++end) {
+			((int *)&x)[i] = strtoul(start, &end, 10);
+			if (*end != ',' || !isdigit(*start))
 				die("sr: invalid option: %s\n", optsel);
-			((int *)&x)[i] = atoi(start);
 		}
+		((int *)&x)[3] = strtoul(start, &end, 10);
+		if (*end != '\0' || !isdigit(*start))
+			die("sr: invalid option: %s\n", optsel);
 	} else {
 		drive(&x, &y, &w, &h, opt);
 	}
 
 	if (x < 0) w += x, x = 0;
 	if (y < 0) h += y, y = 0;
-	w = (x + w) <= scr->width  ? w : scr->width;
-	h = (y + h) <= scr->height ? h : scr->height;
+	w = (x + w) <= scr->width  ? w : scr->width - x;
+	h = (y + h) <= scr->height ? h : scr->height - y;
 
 	Imlib_Image image;
 	if ((image = imlib_create_image_from_drawable(0,
