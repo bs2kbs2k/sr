@@ -76,12 +76,11 @@ pick(int *x, int *y, int *w, int *h)
 		die("sr: unable to grab keyboard\n");
 
 	XEvent evt; bool press;
-	while (!XNextEvent(dpy, &evt)) switch (evt.type) {
+	while (!XNextEvent(dpy, &evt) && evt.type != ButtonRelease)
+			switch (evt.type) {
 	case ButtonPress:
 		press = true, *x = evt.xbutton.x, *y = evt.xbutton.y;
 		break;
-	case ButtonRelease:
-		goto done;
 	case KeyPress: ;
 		KeySym *keysym;
 		if ((keysym = XGetKeyboardMapping(dpy, evt.xkey.keycode, 1,
@@ -119,7 +118,6 @@ pick(int *x, int *y, int *w, int *h)
 		XMapWindow(dpy, draw);
 	}
 
-done:
 	XUngrabKeyboard(dpy, CurrentTime);
 	XUngrabPointer(dpy, CurrentTime);
 	XSelectInput(dpy, draw, StructureNotifyMask);
