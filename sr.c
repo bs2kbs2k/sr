@@ -83,7 +83,6 @@ pick(int *x, int *y, int *w, int *h)
 	case ButtonRelease:
 		goto done;
 	case KeyPress: ;
-		/* TODO: rearrange coords when negative w or h */
 		KeySym *keysym;
 		if ((keysym = XGetKeyboardMapping(dpy, evt.xkey.keycode, 1,
 				&(int){ 0 })) == NULL)
@@ -118,8 +117,12 @@ pick(int *x, int *y, int *w, int *h)
 
 		if (evt.type == MotionNotify)
 			*w = evt.xbutton.x - *x, *h = evt.xbutton.y - *y;
-		XRectangle ln[4] = { { *x, *y, 1, *h }, { *x + *w, *y, 1, *h },
-				{ *x, *y, *w, 1 }, { *x, *y + *h, *w, 1 } };
+
+		int sx = *x, sy = *y, sw = *w, sh = *h;
+		if (sw < 0) sx += sw, sw = -sw;
+		if (sh < 0) sy += sh, sh = -sh;
+		XRectangle ln[4] = { { sx, sy, 1, sh }, { sx + sw, sy, 1, sh },
+				{ sx, sy, sw, 1 }, { sx, sy + sh, sw, 1 } };
 		XShapeCombineRectangles(dpy, draw, ShapeBounding, 0, 0, ln, 4,
 				ShapeSet, 0);
 		XMapWindow(dpy, draw);
@@ -133,7 +136,9 @@ done:
 
 	if (*w != 0 || *h != 0)
 		do XNextEvent(dpy, &evt);
-		while (evt.type != UnmapNotify && evt.xunmap.window != draw);
+		while (evt.type != UnmapNotify || evt.xunmap.window != draw);
+	if (*w < 0) *x += *w, *w = -*w;
+	if (*h < 0) *y += *h, *h = -*h;
 }
 
 static void
