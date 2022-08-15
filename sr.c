@@ -45,8 +45,8 @@ static void
 pick(int *x, int *y, int *w, int *h)
 {
 	Cursor cursor[5];
-	static const int names[5] = { XC_cross, XC_ur_angle,
-			XC_ul_angle, XC_lr_angle, XC_ll_angle };
+	static const int names[5] = { XC_ul_angle, XC_ur_angle,
+			XC_ll_angle, XC_lr_angle, XC_cross };
 	for (int i = 0; i < 5; ++i)
 		cursor[i] = XCreateFontCursor(dpy, names[i]);
 
@@ -69,7 +69,7 @@ pick(int *x, int *y, int *w, int *h)
 
 #define MASK ButtonMotionMask | ButtonPressMask | ButtonReleaseMask
 	if (XGrabPointer(dpy, root, false, MASK, GrabModeAsync, GrabModeAsync,
-			root, cursor[0], CurrentTime) != GrabSuccess)
+			root, cursor[4], CurrentTime) != GrabSuccess)
 		die("sr: unable to grab cursor\n");
 	if (XGrabKeyboard(dpy, root, false, GrabModeAsync, GrabModeAsync,
 			CurrentTime) != GrabSuccess)
@@ -103,18 +103,9 @@ pick(int *x, int *y, int *w, int *h)
 		if (!press)
 			break;
 
-		Cursor cur;
-		if (*x < evt.xbutton.x && *y < evt.xbutton.y)
-			cur = cursor[3];
-		else if (*x < evt.xbutton.x)
-			cur = cursor[1];
-		else if (*y < evt.xbutton.y)
-			cur = cursor[4];
-		else
-			cur = cursor[2];
+		int sel = (*x < evt.xbutton.x) + (*y < evt.xbutton.y) * 2;
 		XChangeActivePointerGrab(dpy, ButtonMotionMask |
-				ButtonReleaseMask, cur, CurrentTime);
-
+				ButtonReleaseMask, cursor[sel], CurrentTime);
 		if (evt.type == MotionNotify)
 			*w = evt.xbutton.x - *x, *h = evt.xbutton.y - *y;
 
@@ -250,7 +241,7 @@ main(int argc, char **argv)
 
 	if (x < 0) w += x, x = 0;
 	if (y < 0) h += y, y = 0;
-	w = (x + w) <= scr->width  ? w : scr->width - x;
+	w = (x + w) <= scr->width ? w : scr->width - x;
 	h = (y + h) <= scr->height ? h : scr->height - y;
 
 	Imlib_Image image;
