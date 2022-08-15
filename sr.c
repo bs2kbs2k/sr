@@ -128,6 +128,8 @@ pick(int *x, int *y, int *w, int *h)
 		while (evt.type != UnmapNotify || evt.xunmap.window != draw);
 	if (*w < 0) *x += *w, *w = -*w;
 	if (*h < 0) *y += *h, *h = -*h;
+
+	nanosleep(&(struct timespec){ .tv_nsec = 2E8 }, NULL);
 }
 
 static void
@@ -207,7 +209,7 @@ main(int argc, char **argv)
 
 	if ((dpy = XOpenDisplay(NULL)) == NULL)
 		die("sr: unable to open display\n");
-	scr  = ScreenOfDisplay(dpy, DefaultScreen(dpy));
+	scr = ScreenOfDisplay(dpy, DefaultScreen(dpy));
 	root = RootWindow(dpy, XScreenNumberOfScreen(scr));
 
 	imlib_context_set_display(dpy);
@@ -230,7 +232,7 @@ main(int argc, char **argv)
 			if (*end != ',' || !isdigit(*start))
 				die("sr: invalid option: %s\n", optsel);
 		}
-		((int *)&x)[3] = strtoul(start, &end, 10);
+		h = strtoul(start, &end, 10);
 		if (*end != '\0' || !isdigit(*start))
 			die("sr: invalid option: %s\n", optsel);
 	} else {
@@ -239,8 +241,8 @@ main(int argc, char **argv)
 
 	if (x < 0) w += x, x = 0;
 	if (y < 0) h += y, y = 0;
-	w = (x + w) <= scr->width ? w : scr->width - x;
-	h = (y + h) <= scr->height ? h : scr->height - y;
+	w = (x + w) < scr->width ? w : scr->width - x;
+	h = (y + h) < scr->height ? h : scr->height - y;
 
 	Imlib_Image image;
 	if ((image = imlib_create_image_from_drawable(0,
